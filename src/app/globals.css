@@ -13,6 +13,10 @@
   --accent-ink: #ffffff;
   --accent-soft: #f1edfd;
   --star: #e0a213;
+  --danger: #dc3b3b;
+  /* はてブ・HN で伸びている記事の数字 */
+  --hot: #e5484d;
+  --hot-hn: #e5720f;
 }
 
 .dark {
@@ -26,6 +30,9 @@
   --accent-ink: #1b1036;
   --accent-soft: #2c2547;
   --star: #f0c04a;
+  --danger: #f26d6d;
+  --hot: #ff6b6f;
+  --hot-hn: #f59a45;
 }
 
 @theme inline {
@@ -39,6 +46,13 @@
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-star: var(--star);
+  --color-danger: var(--danger);
+  --color-hot: var(--hot);
+  --color-hot-hn: var(--hot-hn);
+  /* 文字サイズはこの段階に寄せる: 2xs 11 / xs 12 / ui 13 / sm 14 / title 15 */
+  --text-2xs: 11px;
+  --text-ui: 13px;
+  --text-title: 15px;
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
   --font-serif: var(--font-source-serif), var(--font-noto-serif-jp), "Hiragino Mincho ProN", serif;
@@ -64,6 +78,26 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* キーボード操作のときだけ、いまどこにいるかを出す。入力欄は枠の色で示している */
+:where(button, a, summary, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+.toast {
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  animation: toast 3.2s ease both;
+}
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  6%, 92% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
 /* パネルのスクロールバーを細く */
 .scroll-thin {
   scrollbar-width: thin;
@@ -86,6 +120,11 @@ body {
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+/* 英文は和文ほど行間を取らなくても読める */
+.article-body[lang="en"] { line-height: 1.7; }
+.article-body[data-size="s"] { font-size: 1rem; }
+.article-body[data-size="l"] { font-size: 1.25rem; }
+.article-body[data-font="sans"] { font-family: var(--font-sans); }
 .article-body > * + * {
   margin-top: 1.1em;
 }

@@ -59,11 +59,11 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
           {SHORTCUTS.map(([keys, label]) => (
             <div key={keys} className="flex items-center gap-3 px-4 py-2">
               <dt className="w-24 shrink-0">
-                <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted">
+                <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-2xs text-muted">
                   {keys}
                 </kbd>
               </dt>
-              <dd className="text-[13px]">{label}</dd>
+              <dd className="text-ui">{label}</dd>
             </div>
           ))}
         </dl>

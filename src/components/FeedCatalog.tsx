@@ -94,7 +94,7 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="名前・内容で絞り込む"
-              className="w-full rounded-lg border border-line bg-surface-2 py-1.5 pl-8 pr-2 text-[13px] outline-none placeholder:text-muted focus:border-accent"
+              className="w-full rounded-lg border border-line bg-surface-2 py-1.5 pl-8 pr-2 text-ui outline-none placeholder:text-muted focus:border-accent"
             />
           </div>
           <button
@@ -117,10 +117,10 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                   key={category.id}
                   type="button"
                   onClick={() => jump(category.id)}
-                  className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line px-2.5 py-1 text-left text-[12px] text-ink/85 hover:bg-line/50 md:rounded-lg md:border-0 md:py-1.5 md:text-[13px]"
+                  className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line px-2.5 py-1 text-left text-xs text-ink/85 hover:bg-line/50 md:rounded-lg md:border-0 md:py-1.5 md:text-ui"
                 >
                   <span className="truncate">{category.title}</span>
-                  <span className="ml-auto text-[11px] tabular-nums text-muted">
+                  <span className="ml-auto text-2xs tabular-nums text-muted">
                     {added > 0 ? `${added}/${feeds.length}` : feeds.length}
                   </span>
                 </button>
@@ -139,8 +139,8 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                 <section key={category.id} data-category={category.id} className="scroll-mt-2 pt-4">
                   <div className="flex items-end gap-3">
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-[15px] font-semibold">{category.title}</h3>
-                      <p className="mt-0.5 text-[12px] text-muted">
+                      <h3 className="text-title font-semibold">{category.title}</h3>
+                      <p className="mt-0.5 text-xs text-muted">
                         {category.description}
                         <span className="ml-1 opacity-70">・「{category.folder}」フォルダに追加</span>
                       </p>
@@ -149,7 +149,7 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                       type="button"
                       disabled={rest.length === 0}
                       onClick={() => onSubscribe(rest, category.folder)}
-                      className="shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[12px] font-medium text-accent-ink disabled:bg-line disabled:text-muted"
+                      className="shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-medium text-accent-ink disabled:bg-line disabled:text-muted"
                     >
                       {rest.length === 0 ? "すべて購読中" : `まとめて追加 (${rest.length})`}
                     </button>
@@ -170,7 +170,7 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                             <FeedIcon siteUrl={feed.siteUrl} title={feed.title} size={20} className="mt-0.5" />
                             <div className="min-w-0 flex-1">
                               <p className="flex items-center gap-1.5">
-                                <span className="truncate text-[13.5px] font-medium">{feed.title}</span>
+                                <span className="truncate text-ui font-medium">{feed.title}</span>
                                 {feed.lang === "en" && (
                                   <span
                                     title="英語のフィード。タイトルは日本語訳して表示します"
@@ -180,13 +180,13 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                                   </span>
                                 )}
                               </p>
-                              <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted">
+                              <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">
                                 {feed.description}
                               </p>
                               <button
                                 type="button"
                                 onClick={() => togglePreview(feed)}
-                                className="mt-1 inline-flex items-center gap-0.5 text-[11.5px] text-accent hover:underline"
+                                className="mt-1 inline-flex items-center gap-0.5 text-2xs text-accent hover:underline"
                               >
                                 <Icon.Chevron
                                   className={`h-3 w-3 transition-transform ${openPreview === feed.url ? "rotate-90" : ""}`}
@@ -200,9 +200,9 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                                 subscribed ? onUnsubscribe(feed.url) : onSubscribe([feed], category.folder)
                               }
                               title={subscribed ? "購読を解除" : `「${category.folder}」フォルダに追加`}
-                              className={`group/btn inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                              className={`group/btn inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                                 subscribed
-                                  ? "border border-accent/40 text-accent hover:border-red-500/50 hover:text-red-500"
+                                  ? "border border-accent/40 text-accent hover:border-danger/50 hover:text-danger"
                                   : "border border-line bg-surface text-ink hover:border-accent hover:text-accent"
                               }`}
                             >
@@ -225,17 +225,17 @@ export function FeedCatalog({ subscribedUrls, onSubscribe, onUnsubscribe, onClos
                           {preview && (
                             <div className="mt-2 border-t border-line/70 pt-2">
                               {preview.state === "loading" && (
-                                <p className="flex items-center gap-1.5 text-[12px] text-muted">
+                                <p className="flex items-center gap-1.5 text-xs text-muted">
                                   <Spinner className="h-3 w-3" /> 読み込み中…
                                 </p>
                               )}
                               {preview.state === "error" && (
-                                <p className="text-[12px] text-red-500">記事を取得できませんでした</p>
+                                <p className="text-xs text-danger">記事を取得できませんでした</p>
                               )}
                               {preview.state === "ok" && (
                                 <ul className="space-y-1">
                                   {preview.articles.map((a) => (
-                                    <li key={a.id} className="flex gap-2 text-[12px] leading-snug">
+                                    <li key={a.id} className="flex gap-2 text-xs leading-snug">
                                       <a
                                         href={a.link}
                                         target="_blank"

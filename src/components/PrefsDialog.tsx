@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { parseKeywords } from "@/lib/prefer";
-import type { Persisted } from "@/lib/store";
-import { Icon } from "./ui";
+import type { Density, Persisted, ReadingFont, ReadingSize } from "@/lib/store";
+import { Icon, Segmented } from "./ui";
 
 type Props = {
   translate: boolean;
@@ -14,6 +14,12 @@ type Props = {
   /** 学習に使った記事数 [気になる, 興味なし] */
   events: [number, number];
   onResetModel: () => void;
+  density: Density;
+  onChangeDensity: (density: Density) => void;
+  readingSize: ReadingSize;
+  onChangeReadingSize: (size: ReadingSize) => void;
+  readingFont: ReadingFont;
+  onChangeReadingFont: (font: ReadingFont) => void;
   onClose: () => void;
 };
 
@@ -25,6 +31,12 @@ export function PrefsDialog({
   onSaveFilters,
   events,
   onResetModel,
+  density,
+  onChangeDensity,
+  readingSize,
+  onChangeReadingSize,
+  readingFont,
+  onChangeReadingFont,
   onClose,
 }: Props) {
   const [mute, setMute] = useState(filters.mute.join("\n"));
@@ -44,9 +56,9 @@ export function PrefsDialog({
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const label = "block text-[11px] font-semibold uppercase tracking-wider text-muted";
+  const label = "block text-2xs font-semibold uppercase tracking-wider text-muted";
   const textarea =
-    "mt-1 h-20 w-full resize-y rounded-lg border border-line bg-surface-2 px-3 py-2 text-[13px] outline-none placeholder:text-muted focus:border-accent";
+    "mt-1 h-20 w-full resize-y rounded-lg border border-line bg-surface-2 px-3 py-2 text-ui outline-none placeholder:text-muted focus:border-accent";
 
   return (
     <div
@@ -75,15 +87,58 @@ export function PrefsDialog({
 
         <div className="scroll-thin space-y-5 overflow-y-auto px-4 py-4">
           <section>
-            <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium">
+            <p className={label}>表示</p>
+            <div className="mt-2 space-y-2.5 text-ui">
+              <div className="flex items-center justify-between gap-3">
+                <span>記事一覧</span>
+                <Segmented
+                  label="記事一覧の表示"
+                  value={density}
+                  onChange={onChangeDensity}
+                  options={[
+                    { value: "comfortable", label: "標準" },
+                    { value: "compact", label: "コンパクト" },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>本文の文字</span>
+                <Segmented
+                  label="本文の文字の大きさ"
+                  value={readingSize}
+                  onChange={onChangeReadingSize}
+                  options={[
+                    { value: "s", label: "小" },
+                    { value: "m", label: "中" },
+                    { value: "l", label: "大" },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>本文の書体</span>
+                <Segmented
+                  label="本文の書体"
+                  value={readingFont}
+                  onChange={onChangeReadingFont}
+                  options={[
+                    { value: "serif", label: "明朝" },
+                    { value: "sans", label: "ゴシック" },
+                  ]}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <label className="flex cursor-pointer items-center gap-2 text-ui font-medium">
               <input type="checkbox" checked={translate} onChange={onToggleTranslate} className="accent-[var(--accent)]" />
               英語タイトルを日本語訳で表示する
             </label>
-            <p className="mt-1 pl-6 text-[11.5px] leading-relaxed text-muted">
+            <p className="mt-1 pl-6 text-2xs leading-relaxed text-muted">
               DeepL API Free で訳します。一度訳したタイトルはこの端末に保存し、二度は訳しません。
             </p>
             {translateError && (
-              <p className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+              <p className="mt-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
                 {translateError}
               </p>
             )}
@@ -98,7 +153,7 @@ export function PrefsDialog({
               placeholder={"1行に1つ（例）\nRust\nエージェント\nNext.js"}
               className={textarea}
             />
-            <p className="mt-1 text-[11.5px] text-muted">含む記事は「おすすめ」で上に来ます。英語記事は訳したタイトルでも照合します。</p>
+            <p className="mt-1 text-2xs text-muted">含む記事は「おすすめ」で上に来ます。英語記事は訳したタイトルでも照合します。</p>
           </section>
 
           <section>
@@ -110,16 +165,16 @@ export function PrefsDialog({
               placeholder={"1行に1つ（例）\nPR\n転職\n仮想通貨"}
               className={textarea}
             />
-            <p className="mt-1 text-[11.5px] text-muted">タイトルに含む記事は、スター付き以外のすべての一覧から隠します。</p>
+            <p className="mt-1 text-2xs text-muted">タイトルに含む記事は、スター付き以外のすべての一覧から隠します。</p>
           </section>
 
           <section>
             <p className={label}>好みの学習</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed">
+            <p className="mt-1 text-xs leading-relaxed">
               気になった記事 <span className="font-semibold tabular-nums">{events[0]}</span> 件 ·
               興味なし <span className="font-semibold tabular-nums">{events[1]}</span> 件
             </p>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
+            <p className="mt-1 text-2xs leading-relaxed text-muted">
               記事を開く・スターで「気になる」、「興味なし」(D) や開かずに一括既読で「興味なし」として覚えます。
               学習はこの端末の中だけで行い、外部には送りません。
             </p>
@@ -128,7 +183,7 @@ export function PrefsDialog({
               onClick={() => {
                 if (window.confirm("学習した好みをリセットしますか？")) onResetModel();
               }}
-              className="mt-2 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-[12px] font-medium text-muted hover:text-red-500"
+              className="mt-2 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-danger"
             >
               学習をリセット
             </button>

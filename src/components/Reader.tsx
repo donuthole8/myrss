@@ -919,6 +919,13 @@ export function Reader() {
     setState((prev) => ({ ...prev, prefs: { ...prev.prefs, translate: !prev.prefs.translate } }));
   }, []);
 
+  const setPref = useCallback(
+    <K extends keyof Persisted["prefs"]>(key: K, value: Persisted["prefs"][K]) => {
+      setState((prev) => ({ ...prev, prefs: { ...prev.prefs, [key]: value } }));
+    },
+    [],
+  );
+
   const saveFilters = useCallback((filters: Persisted["filters"]) => {
     setState((prev) => ({ ...prev, filters }));
   }, []);
@@ -1106,6 +1113,8 @@ export function Reader() {
         loading={refreshing}
         searchRef={searchRef}
         onOpenNav={() => setNavOpen(true)}
+        density={state.prefs.density}
+        onBrowseCatalog={() => setCatalogOpen(true)}
       />
 
       <ArticleView
@@ -1125,6 +1134,10 @@ export function Reader() {
         titleJa={titleJa}
         isArticleRead={isRead}
         onOpenRelated={openArticle}
+        readingSize={state.prefs.readingSize}
+        readingFont={state.prefs.readingFont}
+        onChangeReadingSize={(size) => setPref("readingSize", size)}
+        onChangeReadingFont={(font) => setPref("readingFont", font)}
       />
 
       {addOpen && (
@@ -1156,6 +1169,12 @@ export function Reader() {
           onSaveFilters={saveFilters}
           events={model.events}
           onResetModel={() => setModel(emptyModel())}
+          density={state.prefs.density}
+          onChangeDensity={(density) => setPref("density", density)}
+          readingSize={state.prefs.readingSize}
+          onChangeReadingSize={(size) => setPref("readingSize", size)}
+          readingFont={state.prefs.readingFont}
+          onChangeReadingFont={(font) => setPref("readingFont", font)}
           onClose={() => setPrefsOpen(false)}
         />
       )}
@@ -1187,7 +1206,11 @@ export function Reader() {
       )}
 
       {toast && (
-        <div className="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-line bg-surface px-4 py-2 text-[13px] shadow-lg">
+        <div
+          key={toast}
+          role="status"
+          className="toast pointer-events-none fixed left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] rounded-lg border border-line bg-surface px-4 py-2 text-ui shadow-lg"
+        >
           {toast}
         </div>
       )}

@@ -109,21 +109,21 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, o
             </button>
           </form>
 
-          <p className="mt-2 text-[11px] text-muted">
+          <p className="mt-2 text-2xs text-muted">
             サイトのトップページを入れると、ページ内のフィード指定と定番パスから自動で探します。
             RSS の無いサービスも、チャンネル・リポジトリ・ユーザーのページの URL を貼れば購読できます（
             {SUPPORTED_SERVICES.join("・")}）。
           </p>
 
           {error && (
-            <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12.5px] text-red-500">
+            <p className="mt-3 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
               {error}
             </p>
           )}
 
           {candidates && (
             <>
-              <label className="mt-4 block text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <label className="mt-4 block text-2xs font-semibold uppercase tracking-wider text-muted">
                 フォルダ
               </label>
               <input
@@ -131,7 +131,7 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, o
                 value={folder}
                 onChange={(e) => setFolder(e.target.value)}
                 placeholder="未分類"
-                className="mt-1 w-full rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-[13px] outline-none placeholder:text-muted focus:border-accent"
+                className="mt-1 w-full rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-ui outline-none placeholder:text-muted focus:border-accent"
               />
               <datalist id="folder-options">
                 {folders.map((f) => (
@@ -155,15 +155,15 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, o
                       >
                         <FeedIcon siteUrl={candidate.siteUrl} title={candidate.title} size={18} className="mt-0.5" />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-medium">{candidate.title}</span>
-                          <span className="block truncate text-[11px] text-muted">{candidate.url}</span>
+                          <span className="block truncate text-ui font-medium">{candidate.title}</span>
+                          <span className="block truncate text-2xs text-muted">{candidate.url}</span>
                           {candidate.description && (
-                            <span className="mt-0.5 block line-clamp-2 text-[11.5px] text-muted">
+                            <span className="mt-0.5 block line-clamp-2 text-2xs text-muted">
                               {candidate.description}
                             </span>
                           )}
                         </span>
-                        <span className="shrink-0 text-[11px] font-medium text-muted">
+                        <span className="shrink-0 text-2xs font-medium text-muted">
                           {already ? "購読済み" : `${candidate.itemCount}件`}
                         </span>
                       </button>
@@ -184,8 +184,8 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, o
                 <Icon.Sparkle className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-medium">おすすめフィードから選ぶ</span>
-                <span className="block text-[11.5px] text-muted">
+                <span className="block text-ui font-medium">おすすめフィードから選ぶ</span>
+                <span className="block text-2xs text-muted">
                   Qiita トレンド・AI・企業テックブログなど {CATALOG_SIZE} 件。中身を見てワンクリックで追加
                 </span>
               </span>

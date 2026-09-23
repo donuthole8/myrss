@@ -278,3 +278,35 @@ export function Spinner({ className = "h-4 w-4" }: { className?: string }) {
     </svg>
   );
 }
+
+/** 2〜3択を横並びで切り替える */
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+  label: string;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-line bg-surface-2 p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            value === o.value ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}

@@ -55,12 +55,12 @@ function Shell({
   );
 }
 
-const label = "block text-[11px] font-semibold uppercase tracking-wider text-muted";
+const label = "block text-2xs font-semibold uppercase tracking-wider text-muted";
 const input =
-  "mt-1 w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-[14px] outline-none placeholder:text-muted focus:border-accent";
+  "mt-1 w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent";
 const primary = "ml-auto rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-accent-ink disabled:opacity-50";
 const danger =
-  "rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-[12px] font-medium text-muted hover:border-red-500/50 hover:text-red-500";
+  "rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-muted hover:border-danger/50 hover:text-danger";
 
 function useAutofocus() {
   const ref = useRef<HTMLInputElement>(null);
@@ -125,7 +125,7 @@ export function EditFeedDialog({
         }}
         className="space-y-4"
       >
-        <div className="flex items-center gap-2 text-[12px] text-muted">
+        <div className="flex items-center gap-2 text-xs text-muted">
           <FeedIcon siteUrl={feed.siteUrl} title={feed.title} size={16} />
           <span className="truncate" title={feed.url}>
             {feed.url}
@@ -161,7 +161,7 @@ export function EditFeedDialog({
               <option key={f} value={f} />
             ))}
           </datalist>
-          <p className="mt-1 text-[11.5px] text-muted">新しい名前を入れるとフォルダを作ります。</p>
+          <p className="mt-1 text-2xs text-muted">新しい名前を入れるとフォルダを作ります。</p>
         </div>
         {/* Enter で保存するための見えない送信ボタン */}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
@@ -251,7 +251,7 @@ export function EditFolderDialog({
           placeholder={uncategorized ? "新しいフォルダ名" : UNCATEGORIZED}
           className={input}
         />
-        <p className="mt-1 text-[11.5px] text-muted">
+        <p className="mt-1 text-2xs text-muted">
           {uncategorized
             ? `未分類の ${feedCount} 件をこのフォルダに移します。`
             : `既にあるフォルダ名にすると、${feedCount} 件をそちらにまとめます。空にすると未分類に戻します。`}

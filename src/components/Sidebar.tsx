@@ -47,8 +47,8 @@ function Count({ value, active }: { value: number; active: boolean }) {
   if (value <= 0) return null;
   return (
     <span
-      className={`ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
-        active ? "text-ink" : "text-muted"
+      className={`ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-2xs font-semibold tabular-nums ${
+        active ? "text-accent" : "text-muted"
       }`}
     >
       {value > 999 ? "999+" : value}
@@ -126,17 +126,17 @@ export function Sidebar({
   const rowClass = (key: string) =>
     `group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${
       current === key
-        ? "bg-line/80 text-ink font-medium"
+        ? "bg-accent-soft text-accent font-medium"
         : "text-ink/80 hover:bg-line/50"
     }`;
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-line bg-bg">
       <div className="flex items-center gap-2 px-3 py-3">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-ink">
-          <Icon.Coffee className="h-4 w-4" />
-        </span>
-        <span className="text-[15px] font-semibold tracking-tight">Coffeed</span>
+        {/* アプリアイコンと同じ絵を使う */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg" />
+        <span className="text-title font-semibold tracking-tight">Coffeed</span>
         <div className="ml-auto flex items-center gap-0.5">
           <button
             type="button"
@@ -172,7 +172,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onBrowseCatalog}
-          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted transition-colors hover:bg-line/50 hover:text-ink"
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-ui text-muted transition-colors hover:bg-line/50 hover:text-ink"
         >
           <Icon.Sparkle className="h-3.5 w-3.5" />
           おすすめから探す
@@ -227,7 +227,7 @@ export function Sidebar({
 
         <div className="mt-4">
           <div className="flex items-center gap-1 pl-1.5 pr-1">
-            <span className="flex-1 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted">ウォッチ</span>
+            <span className="flex-1 py-1 text-2xs font-semibold uppercase tracking-wider text-muted">ウォッチ</span>
             <button
               type="button"
               onClick={(e) => {
@@ -259,9 +259,9 @@ export function Sidebar({
                   if (e.key === "Escape") setWatchDraft(null);
                 }}
                 placeholder="例: Claude、Next.js"
-                className="w-full rounded-md border border-line bg-surface px-2 py-1 text-[13px] outline-none placeholder:text-muted focus:border-accent"
+                className="w-full rounded-md border border-line bg-surface px-2 py-1 text-ui outline-none placeholder:text-muted focus:border-accent"
               />
-              <label className="flex items-center gap-1.5 text-[11.5px] text-muted">
+              <label className="flex items-center gap-1.5 text-2xs text-muted">
                 <input
                   type="checkbox"
                   checked={watchNews}
@@ -274,14 +274,14 @@ export function Sidebar({
                 <button
                   type="button"
                   onClick={() => setWatchDraft(null)}
-                  className="rounded-md px-2 py-1 text-[12px] text-muted hover:text-ink"
+                  className="rounded-md px-2 py-1 text-xs text-muted hover:text-ink"
                 >
                   やめる
                 </button>
                 <button
                   type="submit"
                   disabled={!watchDraft.trim()}
-                  className="rounded-md bg-accent px-2.5 py-1 text-[12px] font-medium text-accent-ink disabled:opacity-50"
+                  className="rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-accent-ink disabled:opacity-50"
                 >
                   追加
                 </button>
@@ -311,7 +311,7 @@ export function Sidebar({
                     e.stopPropagation();
                     if (window.confirm(`ウォッチ「${w.keyword}」をやめますか？`)) onRemoveWatch(w.keyword);
                   }}
-                  className="absolute right-1 top-1/2 hidden -translate-y-1/2 rounded bg-surface p-1 text-muted hover:text-red-500 pointer-fine:group-hover/row:block"
+                  className="absolute right-1 top-1/2 hidden -translate-y-1/2 rounded bg-surface p-1 text-muted hover:text-danger pointer-fine:group-hover/row:block"
                 >
                   <Icon.X className="h-3.5 w-3.5" />
                 </button>
@@ -319,7 +319,7 @@ export function Sidebar({
             );
           })}
           {watches.length === 0 && watchDraft === null && (
-            <p className="px-2 py-1 text-[11.5px] leading-relaxed text-muted">
+            <p className="px-2 py-1 text-2xs leading-relaxed text-muted">
               気になるキーワードを登録すると、全フィードから拾って1か所にまとめます。
             </p>
           )}
@@ -353,12 +353,12 @@ export function Sidebar({
                     onClick={() =>
                       onSelectView({ kind: "folder", name: group.name === UNCATEGORIZED ? "" : group.name })
                     }
-                    className={`flex flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider transition-colors ${
-                      current === folderKey ? "text-accent" : "text-muted hover:text-ink"
+                    className={`flex flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left text-2xs font-semibold uppercase tracking-wider transition-colors ${
+                      current === folderKey ? "bg-accent-soft text-accent" : "text-muted hover:bg-line/50 hover:text-ink"
                     }`}
                   >
                     <span className="truncate">{group.name}</span>
-                    <Count value={group.unread} active={false} />
+                    <Count value={group.unread} active={current === folderKey} />
                   </button>
                   <button
                     type="button"
@@ -389,7 +389,7 @@ export function Sidebar({
                             <FeedIcon siteUrl={feed.siteUrl} title={feed.title} size={16} />
                             <span className="truncate">{feed.title}</span>
                             {error ? (
-                              <span className="ml-auto shrink-0 text-[11px] font-semibold text-red-500">!</span>
+                              <span className="ml-auto shrink-0 text-2xs font-semibold text-danger">!</span>
                             ) : (
                               <Count value={unreadByFeed[feed.url] ?? 0} active={current === key} />
                             )}
@@ -422,7 +422,7 @@ export function Sidebar({
           </p>
         )}
         {feeds.length > 0 && (
-          <p className="mt-4 hidden px-2 text-[11px] text-muted pointer-coarse:block">
+          <p className="mt-4 hidden px-2 text-2xs text-muted pointer-coarse:block">
             フィードやフォルダを長押しすると、名前の変更・移動・購読解除ができます。
           </p>
         )}
@@ -449,7 +449,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onOpenPrefs}
-            title="翻訳・ミュート・好みの学習"
+            title="表示・翻訳・ミュート・好みの学習"
             className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink"
           >
             <Icon.Sliders className="h-3.5 w-3.5" />
@@ -462,7 +462,7 @@ export function Sidebar({
           >
             <Icon.Keyboard className="h-3.5 w-3.5" />
           </button>
-          <span className="ml-auto truncate text-[11px] tabular-nums">
+          <span className="ml-auto truncate text-2xs tabular-nums">
             {lastUpdated ? `更新 ${new Date(lastUpdated).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}` : ""}
           </span>
         </div>

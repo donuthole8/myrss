@@ -9,6 +9,11 @@ export type Theme = "light" | "dark" | "system";
 export type SortMode = "latest" | "recommended" | "buzz";
 export const SORT_ORDER: SortMode[] = ["latest", "recommended", "buzz"];
 
+/** 一覧の行: comfortable は要約とサムネイルを出す、compact はタイトルだけ */
+export type Density = "comfortable" | "compact";
+export type ReadingSize = "s" | "m" | "l";
+export type ReadingFont = "serif" | "sans";
+
 export type Watch = {
   keyword: string;
   /** 一緒に購読した Google ニュース検索のフィード。無ければ null */
@@ -36,6 +41,9 @@ export type Persisted = {
     sort: SortMode;
     /** 英語などのタイトルを日本語訳で出す */
     translate: boolean;
+    density: Density;
+    readingSize: ReadingSize;
+    readingFont: ReadingFont;
   };
   filters: {
     /** タイトルに含まれていたら隠す */
@@ -62,7 +70,15 @@ export function initialState(): Persisted {
     folders: ["テック", "Global"],
     read: [],
     starred: [],
-    prefs: { theme: "system", unreadOnly: false, sort: "latest", translate: true },
+    prefs: {
+      theme: "system",
+      unreadOnly: false,
+      sort: "latest",
+      translate: true,
+      density: "comfortable",
+      readingSize: "m",
+      readingFont: "serif",
+    },
     filters: { mute: [], interest: [] },
     watches: [],
   };
@@ -114,6 +130,11 @@ export function loadState(): Persisted {
         unreadOnly: parsed.prefs?.unreadOnly === true,
         sort: SORT_ORDER.includes(parsed.prefs?.sort as SortMode) ? parsed.prefs!.sort : "latest",
         translate: parsed.prefs?.translate !== false,
+        density: parsed.prefs?.density === "compact" ? "compact" : "comfortable",
+        readingSize: (["s", "m", "l"] as const).includes(parsed.prefs?.readingSize as ReadingSize)
+          ? parsed.prefs!.readingSize
+          : "m",
+        readingFont: parsed.prefs?.readingFont === "sans" ? "sans" : "serif",
       },
       filters: {
         mute: stringList(parsed.filters?.mute),
