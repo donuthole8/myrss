@@ -3,28 +3,28 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg: #f4f5f7;
+  --bg: #f6f6f7;
   --surface: #ffffff;
-  --surface-2: #fafafb;
-  --line: #e3e5ea;
-  --ink: #16181d;
-  --muted: #6b7280;
-  --accent: #14915a;
+  --surface-2: #f8f8f9;
+  --line: #e8e8eb;
+  --ink: #1d1d20;
+  --muted: #6e6f78;
+  --accent: #3b5bdb;
   --accent-ink: #ffffff;
-  --accent-soft: #e6f4ed;
+  --accent-soft: #eef1fd;
   --star: #e0a213;
 }
 
 .dark {
-  --bg: #0d0f13;
-  --surface: #14171d;
-  --surface-2: #1a1e25;
-  --line: #262b34;
-  --ink: #e6e8ec;
-  --muted: #8b93a1;
-  --accent: #34d27b;
-  --accent-ink: #06130c;
-  --accent-soft: #14271d;
+  --bg: #161618;
+  --surface: #1c1c1f;
+  --surface-2: #232326;
+  --line: #2e2e33;
+  --ink: #e8e8ea;
+  --muted: #8e8e96;
+  --accent: #7d93f6;
+  --accent-ink: #0d1230;
+  --accent-soft: #252b45;
   --star: #f0c04a;
 }
 
@@ -41,6 +41,7 @@
   --color-star: var(--star);
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
+  --font-serif: var(--font-source-serif), var(--font-noto-serif-jp), "Hiragino Mincho ProN", serif;
 }
 
 html,
@@ -79,8 +80,9 @@ body {
 
 /* ---- 記事本文 ---- */
 .article-body {
-  font-size: 1.0625rem;
-  line-height: 1.85;
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.9;
   color: var(--ink);
   overflow-wrap: anywhere;
 }
@@ -91,6 +93,7 @@ body {
 .article-body h2,
 .article-body h3,
 .article-body h4 {
+  font-family: var(--font-sans);
   font-weight: 650;
   line-height: 1.35;
   margin-top: 1.8em;

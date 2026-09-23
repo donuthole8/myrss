@@ -6,6 +6,18 @@ export type Feed = {
   /** 空文字なら未分類 */
   folder: string;
   addedAt: number;
+  /** 自分で名前を付けたら、配信側のタイトルで上書きしない */
+  renamed?: boolean;
+};
+
+/** 配信元が教えてくれる盛り上がりの指標 */
+export type Buzz = {
+  /** はてなブックマーク数 */
+  hatena?: number;
+  /** Hacker News のポイント */
+  points?: number;
+  /** コメント数 */
+  comments?: number;
 };
 
 export type Article = {
@@ -22,6 +34,7 @@ export type Article = {
   /** サニタイズ済みHTML */
   content: string;
   image: string | null;
+  buzz?: Buzz;
 };
 
 export type ParsedFeed = {
@@ -39,6 +52,12 @@ export type FeedResult =
 export type View =
   | { kind: "all" }
   | { kind: "starred" }
+  /** 購読全体からキーワードで拾う横断ビュー */
+  | { kind: "topic"; id: "ai" }
+  /** 複数ソースで取り上げられている・ブクマが多い記事のランキング */
+  | { kind: "trending" }
+  /** 自分で登録したキーワードの横断ビュー */
+  | { kind: "watch"; keyword: string }
   | { kind: "folder"; name: string }
   | { kind: "feed"; url: string };
 
@@ -48,6 +67,12 @@ export function viewKey(view: View): string {
       return "all";
     case "starred":
       return "starred";
+    case "topic":
+      return `topic:${view.id}`;
+    case "trending":
+      return "trending";
+    case "watch":
+      return `watch:${view.keyword}`;
     case "folder":
       return `folder:${view.name}`;
     case "feed":

@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Serif_JP, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// 記事本文用。和文は重いので先読みしない
+const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"] });
+const notoSerifJp = Noto_Serif_JP({
+  variable: "--font-noto-serif-jp",
+  weight: ["400", "700"],
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: "Reedly — RSSリーダー",
@@ -19,8 +26,8 @@ export const viewport: Viewport = {
   // ホーム画面から開いたときにノッチ下まで描画する
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f5f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d0f13" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f6f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#161618" },
   ],
 };
 
@@ -37,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} ${notoSerifJp.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

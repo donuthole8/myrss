@@ -5,6 +5,21 @@ const MAX_READ_IDS = 8000;
 const MAX_STARRED = 500;
 
 export type Theme = "light" | "dark" | "system";
+/** buzz: ソース数・はてブ数・HN ポイントの多い順 */
+export type SortMode = "latest" | "recommended" | "buzz";
+export const SORT_ORDER: SortMode[] = ["latest", "recommended", "buzz"];
+
+export type Watch = {
+  keyword: string;
+  /** 一緒に購読した Google ニュース検索のフィード。無ければ null */
+  feedUrl: string | null;
+};
+
+export const WATCH_FOLDER = "ウォッチ";
+
+export function googleNewsUrl(keyword: string): string {
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=ja&gl=JP&ceid=JP:ja`;
+}
 
 export type Persisted = {
   version: 1;
@@ -17,10 +32,22 @@ export type Persisted = {
   prefs: {
     theme: Theme;
     unreadOnly: boolean;
+    /** recommended: 学習した好みの順に並べ、明らかに好みでないものは隠す。buzz: 話題の順 */
+    sort: SortMode;
+    /** 英語などのタイトルを日本語訳で出す */
+    translate: boolean;
   };
+  filters: {
+    /** タイトルに含まれていたら隠す */
+    mute: string[];
+    /** 含まれていたらおすすめ度を上げる */
+    interest: string[];
+  };
+  watches: Watch[];
 };
 
 const DEFAULT_FEEDS: Feed[] = [
+  { url: "https://qiita.com/popular-items/feed", title: "Qiita 人気の記事", siteUrl: "https://qiita.com", folder: "テック", addedAt: 0 },
   { url: "https://zenn.dev/feed", title: "Zenn", siteUrl: "https://zenn.dev", folder: "テック", addedAt: 0 },
   { url: "https://b.hatena.ne.jp/hotentry/it.rss", title: "はてブ テクノロジー", siteUrl: "https://b.hatena.ne.jp", folder: "テック", addedAt: 0 },
   { url: "https://www.publickey1.jp/atom.xml", title: "Publickey", siteUrl: "https://www.publickey1.jp", folder: "テック", addedAt: 0 },
@@ -35,7 +62,9 @@ export function initialState(): Persisted {
     folders: ["テック", "Global"],
     read: [],
     starred: [],
-    prefs: { theme: "system", unreadOnly: false },
+    prefs: { theme: "system", unreadOnly: false, sort: "latest", translate: true },
+    filters: { mute: [], interest: [] },
+    watches: [],
   };
 }
 
@@ -46,6 +75,10 @@ function isFeed(value: unknown): value is Feed {
     typeof (value as Feed).url === "string" &&
     (value as Feed).url.length > 0
   );
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string" && v.length > 0) : [];
 }
 
 /** localStorage は壊れている前提で読む。読めなければ初期状態に戻す */
@@ -79,7 +112,20 @@ export function loadState(): Persisted {
           ? (parsed.prefs!.theme as Theme)
           : "system",
         unreadOnly: parsed.prefs?.unreadOnly === true,
+        sort: SORT_ORDER.includes(parsed.prefs?.sort as SortMode) ? parsed.prefs!.sort : "latest",
+        translate: parsed.prefs?.translate !== false,
       },
+      filters: {
+        mute: stringList(parsed.filters?.mute),
+        interest: stringList(parsed.filters?.interest),
+      },
+      watches: Array.isArray(parsed.watches)
+        ? parsed.watches.filter(
+            (w): w is Watch =>
+              !!w && typeof w.keyword === "string" && w.keyword.length > 0 &&
+              (w.feedUrl === null || typeof w.feedUrl === "string"),
+          )
+        : [],
     };
   } catch {
     return initialState();
@@ -112,6 +158,12 @@ export const UNCATEGORIZED = "未分類";
 
 export function folderOf(feed: Feed): string {
   return feed.folder || UNCATEGORIZED;
+}
+
+/** フィードが1つも入っていないフォルダを落とす */
+export function pruneFolders(folders: string[], feeds: Feed[]): string[] {
+  const used = new Set(feeds.map((f) => f.folder).filter(Boolean));
+  return folders.filter((f) => used.has(f));
 }
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";

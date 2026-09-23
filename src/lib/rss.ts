@@ -1,6 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import sanitizeHtml from "sanitize-html";
-import type { Article, ParsedFeed } from "./types";
+import type { Article, Buzz, ParsedFeed } from "./types";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -147,6 +147,29 @@ function findImage(item: Node, html: string, base: string): string | null {
   return inline ? absolutize(inline, base) : null;
 }
 
+function count(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const n = Number(raw.replace(/,/g, ""));
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+/**
+ * 配信元が埋めてくれている盛り上がりの数字。
+ * はてブの人気エントリーは <hatena:bookmarkcount>、hnrss は本文に "Points: 123" と書いてくる。
+ */
+function findBuzz(item: Node, rawHtml: string): Buzz | undefined {
+  // 普通の記事本文の "Points:" を拾わないよう、hnrss の書式のときだけ読む
+  const hn = /news\.ycombinator\.com\/item/.test(rawHtml);
+  const buzz: Buzz = {
+    hatena: count(text(item["hatena:bookmarkcount"])),
+    points: hn ? count(/Points:\s*([\d,]+)/.exec(rawHtml)?.[1]) : undefined,
+    comments: count(text(item["slash:comments"])) ??
+      (hn ? count(/# Comments:\s*([\d,]+)/.exec(rawHtml)?.[1]) : undefined),
+  };
+  const present = Object.fromEntries(Object.entries(buzz).filter(([, v]) => v !== undefined));
+  return Object.keys(present).length > 0 ? (present as Buzz) : undefined;
+}
+
 /** Atom の <link rel="alternate" href> を取り出す */
 function atomLink(node: unknown, rel = "alternate"): string {
   const links = toArray((node as Node)?.link as unknown);
@@ -233,6 +256,7 @@ export function parseFeed(xml: string, feedUrl: string): ParsedFeed {
       summary: toPlainText(summarySource),
       content,
       image: findImage(item, rawHtml, base),
+      buzz: findBuzz(item, rawHtml),
     };
   });
 

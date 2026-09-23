@@ -125,10 +125,60 @@ export const Icon = {
       <path d="M4 6V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v1" />
     </Svg>
   ),
+  ThumbDown: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M17 14V4" />
+      <path d="M9 18.5 10 14H5.5a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 6.7 4H17v10l-4.5 6.2a1.6 1.6 0 0 1-2.9-1z" />
+    </Svg>
+  ),
+  Sparkle: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
+      <path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" />
+    </Svg>
+  ),
+  Sliders: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" />
+      <circle cx="16" cy="6" r="2" />
+      <circle cx="10" cy="12" r="2" />
+      <circle cx="18" cy="18" r="2" />
+    </Svg>
+  ),
+  Pencil: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16z" />
+      <path d="m13.5 6.5 4 4" />
+    </Svg>
+  ),
+  Flame: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M12 21a7 7 0 0 0 7-7c0-4-3-6.5-4-10-2.5 1.5-4 4-4 6.5-1-.5-2-1.8-2.2-3C7 9.2 5 11.5 5 14a7 7 0 0 0 7 7z" />
+    </Svg>
+  ),
+  Eye: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </Svg>
+  ),
+  Translate: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 5h9M8.5 3v2M11 5c-1 4-3.5 7-7 9" />
+      <path d="M6 9c1.3 2 3.2 3.5 5.5 4.5" />
+      <path d="m12 21 4.5-10L21 21M13.6 17.5h5.8" />
+    </Svg>
+  ),
   Keyboard: (p: IconProps) => (
     <Svg {...p}>
       <rect x="2.5" y="6" width="19" height="12" rx="2" />
       <path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" />
+    </Svg>
+  ),
+  PanelRight: (p: IconProps) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M15 4v16" />
     </Svg>
   ),
 };
@@ -186,6 +236,18 @@ export function FeedIcon({
       onError={() => setFailed(true)}
       loading="lazy"
     />
+  );
+}
+
+/** 機械翻訳したタイトルの目印。原文と取り違えないように、訳の前に必ず付ける */
+export function TranslatedBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      title="DeepL で日本語に翻訳したタイトル"
+      className={`inline-flex shrink-0 items-center gap-0.5 rounded bg-accent-soft px-1 py-px align-middle text-[10px] font-semibold leading-tight text-accent ${className}`}
+    >
+      <Icon.Translate className="h-2.5 w-2.5" />訳
+    </span>
   );
 }
 

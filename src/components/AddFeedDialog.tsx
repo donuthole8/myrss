@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CATALOG_SIZE } from "@/lib/presets";
 import type { Candidate } from "@/lib/types";
 import { FeedIcon, Icon, Spinner } from "./ui";
 
@@ -8,10 +9,12 @@ type Props = {
   folders: string[];
   subscribedUrls: Set<string>;
   onClose: () => void;
-  onSubscribe: (candidate: Candidate, folder: string) => void;
+  onSubscribe: (candidates: Candidate[], folder: string) => void;
+  /** おすすめフィードの一覧を開く */
+  onBrowse: () => void;
 };
 
-export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe }: Props) {
+export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, onBrowse }: Props) {
   const [url, setUrl] = useState("");
   const [folder, setFolder] = useState("");
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
@@ -64,7 +67,7 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe }:
         role="dialog"
         aria-modal="true"
         aria-label="フィードを追加"
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
+        className="flex max-h-[80dvh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-line px-4 py-3">
@@ -80,7 +83,7 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe }:
           </button>
         </div>
 
-        <div className="px-4 py-4">
+        <div className="scroll-thin overflow-y-auto px-4 py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -142,7 +145,7 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe }:
                         type="button"
                         disabled={already}
                         onClick={() => {
-                          onSubscribe(candidate, folder.trim());
+                          onSubscribe([candidate], folder.trim());
                           onClose();
                         }}
                         className="flex w-full items-start gap-2.5 rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-left transition-colors hover:border-accent disabled:opacity-50 disabled:hover:border-line"
@@ -166,6 +169,25 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe }:
                 })}
               </ul>
             </>
+          )}
+
+          {!candidates && (
+            <button
+              type="button"
+              onClick={onBrowse}
+              className="mt-5 flex w-full items-center gap-3 rounded-lg border border-line bg-surface-2 px-3 py-3 text-left transition-colors hover:border-accent"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                <Icon.Sparkle className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium">おすすめフィードから選ぶ</span>
+                <span className="block text-[11.5px] text-muted">
+                  Qiita トレンド・AI・企業テックブログなど {CATALOG_SIZE} 件。中身を見てワンクリックで追加
+                </span>
+              </span>
+              <Icon.Chevron className="h-4 w-4 text-muted" />
+            </button>
           )}
         </div>
       </div>
