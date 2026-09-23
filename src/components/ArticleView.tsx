@@ -236,28 +236,22 @@ export function ArticleView({
               )}
             </h1>
             {translatedTitle && (
-              <div className="mt-2 flex items-start gap-2 text-[13.5px] leading-snug text-muted">
-                <button
-                  type="button"
-                  onClick={() => setShowOriginal((v) => !v)}
-                  title={showOriginal ? "訳を見出しにする" : "原文を見出しにする"}
-                  className="mt-px shrink-0"
-                >
-                  {showOriginal ? (
-                    <span className="inline-flex items-center rounded border border-line px-1 py-px text-[10px] font-semibold leading-tight">
-                      原文
-                    </span>
-                  ) : (
-                    <TranslatedBadge />
-                  )}
-                </button>
-                <p>
-                  <span className="mr-1 opacity-70">{showOriginal ? "訳" : "原文"}</span>
-                  <span lang={showOriginal ? "ja" : "en"}>
-                    {showOriginal ? translatedTitle : article.title}
-                  </span>
-                  <span className="ml-1.5 text-[11px] opacity-70">（DeepL による機械翻訳）</span>
+              <div className="mt-2.5">
+                <p className="text-[14px] leading-snug text-muted" lang={showOriginal ? "ja" : "en"}>
+                  {showOriginal ? translatedTitle : article.title}
                 </p>
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-muted">
+                  <TranslatedBadge size={16} />
+                  <span>DeepL で翻訳</span>
+                  <span className="opacity-50">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowOriginal((v) => !v)}
+                    className="rounded-full border border-line px-2 py-px transition-colors hover:border-accent hover:text-accent"
+                  >
+                    {showOriginal ? "訳を見出しにする" : "原文を見出しにする"}
+                  </button>
+                </div>
               </div>
             )}
 

@@ -240,13 +240,24 @@ export function FeedIcon({
 }
 
 /** 機械翻訳したタイトルの目印。原文と取り違えないように、訳の前に必ず付ける */
-export function TranslatedBadge({ className = "" }: { className?: string }) {
+export function TranslatedBadge({
+  size = 16,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <span
       title="DeepL で日本語に翻訳したタイトル"
-      className={`inline-flex shrink-0 items-center gap-0.5 rounded bg-accent-soft px-1 py-px align-middle text-[10px] font-semibold leading-tight text-accent ${className}`}
+      aria-label="翻訳"
+      style={{ width: size, height: size }}
+      className={`inline-flex shrink-0 items-center justify-center rounded-[5px] bg-gradient-to-br from-accent to-accent/70 align-middle text-accent-ink shadow-sm ring-1 ring-inset ring-white/15 ${className}`}
     >
-      <Icon.Translate className="h-2.5 w-2.5" />訳
+      {/* Material Icons "translate" (Apache License 2.0) */}
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ width: size * 0.7, height: size * 0.7 }}>
+        <path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" />
+      </svg>
     </span>
   );
 }

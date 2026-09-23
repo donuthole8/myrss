@@ -357,7 +357,7 @@ function ArticleRow({
               }`}
             >
               {!read && <span className="mr-1.5 inline-block h-1.5 w-1.5 -translate-y-0.5 rounded-full bg-accent align-middle" />}
-              {translated && <TranslatedBadge className="mr-1.5 -translate-y-px" />}
+              {translated && <TranslatedBadge size={15} className="mr-1.5 -translate-y-px" />}
               {translated ?? article.title}
             </h3>
             {translated && (
