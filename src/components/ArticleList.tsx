@@ -21,6 +21,10 @@ type Props = {
   onSelect: (article: Article) => void;
   /** 訳があれば返す */
   translatedTitle: (article: Article) => string | undefined;
+  /** 抜粋の訳があれば返す */
+  translatedSummary: (article: Article) => string | undefined;
+  /** 抜粋が画面に入った記事。見えた分だけ訳すため */
+  onSummariesShown: (articles: Article[]) => void;
   isRead: (id: string) => boolean;
   isStarred: (id: string) => boolean;
   onToggleStar: (article: Article) => void;
@@ -59,6 +63,8 @@ export function ArticleList({
   selectedId,
   onSelect,
   translatedTitle,
+  translatedSummary,
+  onSummariesShown,
   isRead,
   isStarred,
   onToggleStar,
@@ -100,6 +106,25 @@ export function ArticleList({
     },
   });
 
+  // 画面に入った行を知らせる。抜粋を出さないコンパクト表示では要らない
+  useEffect(() => {
+    const root = listRef.current;
+    if (!root || density === "compact") return;
+    const byId = new Map(articles.map((a) => [a.id, a]));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const shown = entries
+          .filter((e) => e.isIntersecting)
+          .map((e) => byId.get((e.target as HTMLElement).dataset.articleId ?? ""))
+          .filter((a): a is Article => !!a);
+        if (shown.length > 0) onSummariesShown(shown);
+      },
+      { root },
+    );
+    root.querySelectorAll("[data-article-id]").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [articles, density, onSummariesShown]);
+
   // キーボードで選択が動いたときに見える位置まで送る
   useEffect(() => {
     if (!selectedId || !listRef.current) return;
@@ -115,9 +140,9 @@ export function ArticleList({
             type="button"
             onClick={onOpenNav}
             aria-label="フィード一覧を開く"
-            className="-ml-1 rounded-md p-1 text-muted hover:bg-line/60 hover:text-ink md:hidden"
+            className="-my-1.5 -ml-2 rounded-lg p-2 text-muted hover:bg-line/60 hover:text-ink md:hidden"
           >
-            <Icon.Rss />
+            <Icon.Menu className="h-5 w-5" />
           </button>
           <h2 className="truncate text-title font-semibold tracking-tight">{title}</h2>
           {loading && <Spinner className="h-3.5 w-3.5 text-muted" />}
@@ -131,7 +156,10 @@ export function ArticleList({
               ref={searchRef}
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="記事を検索  /"
+              placeholder="記事を検索"
+              title="記事を検索 (/)"
+              type="search"
+              enterKeyHint="search"
               className="w-full rounded-lg border border-line bg-surface-2 py-1.5 pl-8 pr-2 text-ui outline-none placeholder:text-muted focus:border-accent"
             />
           </div>
@@ -255,6 +283,7 @@ export function ArticleList({
             key={article.id}
             article={article}
             translated={translatedTitle(article)}
+            summary={translatedSummary(article) ?? article.summary}
             read={isRead(article.id)}
             starred={isStarred(article.id)}
             selected={article.id === selectedId}
@@ -277,6 +306,7 @@ const SWIPE_TRIGGER_PX = 72;
 function ArticleRow({
   article,
   translated,
+  summary,
   read,
   starred,
   selected,
@@ -289,6 +319,7 @@ function ArticleRow({
 }: {
   article: Article;
   translated: string | undefined;
+  summary: string;
   read: boolean;
   starred: boolean;
   selected: boolean;
@@ -375,7 +406,7 @@ function ArticleRow({
               e.stopPropagation();
               onToggleStar(article);
             }}
-            className={`-my-1 -mr-1 ml-auto shrink-0 rounded p-1 transition-colors hover:bg-line/60 ${
+            className={`-my-1 -mr-1 ml-auto shrink-0 rounded p-1 transition-colors hover:bg-line/60 pointer-coarse:-my-2.5 pointer-coarse:-mr-2.5 pointer-coarse:p-2.5 ${
               starred
                 ? "text-star"
                 : "text-transparent group-hover:text-muted pointer-coarse:text-muted/40"
@@ -397,8 +428,8 @@ function ArticleRow({
                 {translated ?? article.title}
               </h3>
 
-              {!compact && article.summary && (
-                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{article.summary}</p>
+              {!compact && summary && (
+                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{summary}</p>
               )}
 
               {!compact && <BuzzLine sources={sources} buzz={buzz} />}
@@ -427,7 +458,8 @@ function ArticleRow({
 export function BuzzLine({ sources, buzz }: { sources: string[]; buzz: Buzz | undefined }) {
   const hatena = buzz?.hatena ?? 0;
   const points = buzz?.points ?? 0;
-  if (sources.length === 0 && hatena < 3 && points === 0) return null;
+  const likes = buzz?.likes ?? 0;
+  if (sources.length === 0 && hatena < 3 && points === 0 && likes === 0) return null;
   return (
     <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-2xs">
       {sources.length > 0 && (
@@ -452,6 +484,14 @@ export function BuzzLine({ sources, buzz }: { sources: string[]; buzz: Buzz | un
           title={`Hacker News のポイント${buzz?.comments !== undefined ? `（コメント ${buzz.comments}）` : ""}`}
         >
           ▲ {points.toLocaleString()}
+        </span>
+      )}
+      {likes > 0 && (
+        <span
+          className={`shrink-0 tabular-nums ${likes >= 100 ? "font-semibold text-hot" : "text-muted"}`}
+          title="Qiita / Zenn のいいね数"
+        >
+          ♥ {likes.toLocaleString()}
         </span>
       )}
       {sources.length > 0 && <span className="truncate text-muted">{sources.join(" · ")}</span>}

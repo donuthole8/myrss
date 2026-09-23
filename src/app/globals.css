@@ -84,6 +84,15 @@ body {
   outline-offset: 2px;
 }
 
+/* iOS Safari は 16px 未満の入力欄にフォーカスすると画面を拡大してしまう */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 .toast {
   bottom: calc(1.25rem + env(safe-area-inset-bottom));
   transform: translateX(-50%);

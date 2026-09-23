@@ -102,6 +102,11 @@ export const Icon = {
       <circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none" />
     </Svg>
   ),
+  Menu: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </Svg>
+  ),
   /** ロゴ。湯気の立つ珈琲カップ */
   Coffee: (p: IconProps) => (
     <Svg {...p}>

@@ -18,6 +18,8 @@ export type Buzz = {
   points?: number;
   /** コメント数 */
   comments?: number;
+  /** Qiita / Zenn のいいね数 */
+  likes?: number;
 };
 
 export type Article = {

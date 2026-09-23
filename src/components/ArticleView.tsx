@@ -539,6 +539,7 @@ function InfoPanel({
   if (article.author) rows.push(["著者", article.author]);
   if (article.publishedAt) rows.push(["公開", fullDate(article.publishedAt)]);
   if (buzz?.hatena) rows.push(["はてブ", `${buzz.hatena.toLocaleString()} users`]);
+  if (buzz?.likes) rows.push(["いいね", buzz.likes.toLocaleString()]);
   if (buzz?.points) {
     rows.push([
       "Hacker News",

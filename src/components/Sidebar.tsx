@@ -124,7 +124,7 @@ export function Sidebar({
   }, [feeds, unreadByFeed]);
 
   const rowClass = (key: string) =>
-    `group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${
+    `group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors pointer-coarse:py-2.5 ${
       current === key
         ? "bg-accent-soft text-accent font-medium"
         : "text-ink/80 hover:bg-line/50"
@@ -144,7 +144,7 @@ export function Sidebar({
             disabled={refreshing}
             title="すべて更新 (R)"
             aria-label="すべて更新"
-            className="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink disabled:opacity-50"
+            className="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink disabled:opacity-50 pointer-coarse:p-2.5"
           >
             {refreshing ? <Spinner /> : <Icon.Refresh />}
           </button>
@@ -153,7 +153,7 @@ export function Sidebar({
             onClick={onCycleTheme}
             title={`テーマ: ${THEME_LABEL[theme]}`}
             aria-label="テーマ切り替え"
-            className="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink"
+            className="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
           >
             {isDark ? <Icon.Moon /> : <Icon.Sun />}
           </button>
@@ -434,7 +434,8 @@ export function Sidebar({
             type="button"
             onClick={() => fileInput.current?.click()}
             title="OPMLを読み込む"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink"
+            aria-label="OPMLを読み込む"
+            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
           >
             <Icon.Upload className="h-3.5 w-3.5" />
           </button>
@@ -442,7 +443,8 @@ export function Sidebar({
             type="button"
             onClick={onExportOpml}
             title="OPMLを書き出す"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink"
+            aria-label="OPMLを書き出す"
+            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
           >
             <Icon.Download className="h-3.5 w-3.5" />
           </button>
@@ -450,7 +452,8 @@ export function Sidebar({
             type="button"
             onClick={onOpenPrefs}
             title="表示・翻訳・ミュート・好みの学習"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink"
+            aria-label="設定"
+            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
           >
             <Icon.Sliders className="h-3.5 w-3.5" />
           </button>
@@ -458,7 +461,7 @@ export function Sidebar({
             type="button"
             onClick={onShowShortcuts}
             title="キーボードショートカット (?)"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink"
+            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:hidden"
           >
             <Icon.Keyboard className="h-3.5 w-3.5" />
           </button>
