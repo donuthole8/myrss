@@ -24,7 +24,7 @@ function en(url: string, title: string, siteUrl: string, description: string): C
 
 /**
  * おすすめフィードのカタログ。どれもこのアプリのパーサーで読めて、
- * 直近も更新されていることを確認したもの (2026-09)。
+ * 直近も更新されていることを確認したもの (2026-09)。追加するときも同じ確認をする。
  */
 export const CATALOG: CatalogCategory[] = [
   {
@@ -37,6 +37,7 @@ export const CATALOG: CatalogCategory[] = [
       ja("https://zenn.dev/feed", "Zenn トレンド", "https://zenn.dev", "Zenn で注目を集めている記事"),
       ja("https://b.hatena.ne.jp/hotentry/it.rss", "はてブ テクノロジー", "https://b.hatena.ne.jp", "はてなブックマークのテクノロジー人気エントリー"),
       ja("https://b.hatena.ne.jp/hotentry/all.rss", "はてブ 総合", "https://b.hatena.ne.jp", "はてなブックマークの総合人気エントリー。IT 以外も含む"),
+      ja("https://b.hatena.ne.jp/entrylist/it.rss", "はてブ テクノロジー 新着", "https://b.hatena.ne.jp", "人気エントリーになる前の新着。話題を早めに拾える"),
       ja("https://www.publickey1.jp/atom.xml", "Publickey", "https://www.publickey1.jp", "クラウド・開発ツール・エンタープライズ IT の業界ニュース"),
       ja("https://gihyo.jp/feed/atom", "gihyo.jp", "https://gihyo.jp", "技術評論社。連載・ニュース・書籍情報"),
       en("https://speakerdeck.com/c/programming.atom", "Speaker Deck: Programming", "https://speakerdeck.com", "勉強会・カンファレンスの発表資料。日本語の資料も多い"),
@@ -62,6 +63,7 @@ export const CATALOG: CatalogCategory[] = [
       en("https://simonwillison.net/atom/everything/", "Simon Willison", "https://simonwillison.net", "LLM を実務で使い倒す開発者の日々のメモ"),
       en("https://www.latent.space/feed", "Latent.Space", "https://www.latent.space", "AI エンジニア向けのニュースレター・ポッドキャスト"),
       en("https://jack-clark.net/feed/", "Import AI", "https://jack-clark.net", "AI 研究と政策の週刊ニュースレター"),
+      ja("https://blog.lai.so/rss/", "laiso", "https://blog.lai.so", "AI コーディングエージェントと開発ツールの考察"),
       en(
         // 語を増やしすぎると hnrss 側がタイムアウトしやすい
         "https://hnrss.org/newest?q=AI+OR+LLM+OR+GPT+OR+Claude&points=100",
@@ -82,6 +84,8 @@ export const CATALOG: CatalogCategory[] = [
       ja("https://www.watch.impress.co.jp/data/rss/1.0/ipw/feed.rdf", "Impress Watch", "https://www.watch.impress.co.jp", "PC・スマホ・家電・ネットのニュース"),
       ja("https://gigazine.net/news/rss_2.0/", "GIGAZINE", "https://gigazine.net", "海外テックの話題を日本語で。量が多い"),
       ja("https://codezine.jp/rss/new/20/index.xml", "CodeZine", "https://codezine.jp", "開発者向けの技術ニュース・イベントレポート"),
+      ja("https://thinkit.co.jp/rss.xml", "Think IT", "https://thinkit.co.jp", "OSS・クラウドネイティブの連載と解説"),
+      ja("https://forest.watch.impress.co.jp/data/rss/1.0/wf/feed.rdf", "窓の杜", "https://forest.watch.impress.co.jp", "ツール・アプリの新着とアップデート。量が多い"),
       ja("https://dev.classmethod.jp/feed/", "DevelopersIO", "https://dev.classmethod.jp", "クラスメソッドの技術ブログ。AWS の検証記事が特に多い"),
       ja("https://news.yahoo.co.jp/rss/topics/it.xml", "Yahoo!ニュース IT", "https://news.yahoo.co.jp", "Yahoo!ニュースの IT トピックス"),
     ],
@@ -93,6 +97,8 @@ export const CATALOG: CatalogCategory[] = [
     folder: "Global",
     feeds: [
       en("https://hnrss.org/frontpage", "Hacker News", "https://news.ycombinator.com", "Hacker News のフロントページ"),
+      en("https://hnrss.org/best", "Hacker News: Best", "https://news.ycombinator.com/best", "HN で評価の高い記事だけ。フロントページより少なく濃い"),
+      en("https://tldr.tech/api/rss/tech", "TLDR Tech", "https://tldr.tech", "その日のテックニュースを数行ずつ要約。朝の流し読み向き"),
       en("https://lobste.rs/rss", "Lobsters", "https://lobste.rs", "プログラミング寄りのリンク共有コミュニティ"),
       en("https://dev.to/feed", "DEV Community", "https://dev.to", "開発者のブログ投稿"),
       en("https://github.blog/feed/", "The GitHub Blog", "https://github.blog", "GitHub の公式ブログ"),
@@ -100,6 +106,35 @@ export const CATALOG: CatalogCategory[] = [
       en("https://feeds.arstechnica.com/arstechnica/index", "Ars Technica", "https://arstechnica.com", "技術寄りの深いテックニュース"),
       en("https://techcrunch.com/feed/", "TechCrunch", "https://techcrunch.com", "スタートアップと資金調達のニュース"),
       en("https://www.technologyreview.com/feed/", "MIT Technology Review", "https://www.technologyreview.com", "技術が社会に与える影響の解説"),
+    ],
+  },
+  {
+    id: "weekly",
+    title: "週刊まとめ",
+    description: "週に一度読めば追いつけるニュースレター",
+    folder: "週刊まとめ",
+    feeds: [
+      ja("https://jser.info/rss/", "JSer.info", "https://jser.info", "JavaScript の週刊まとめ (日本語)"),
+      en("https://cprss.s3.amazonaws.com/javascriptweekly.com.xml", "JavaScript Weekly", "https://javascriptweekly.com", "JavaScript の週刊ニュースレター"),
+      en("https://cprss.s3.amazonaws.com/frontendfoc.us.xml", "Frontend Focus", "https://frontendfoc.us", "HTML / CSS / ブラウザの週刊ニュースレター"),
+      en("https://cprss.s3.amazonaws.com/golangweekly.com.xml", "Golang Weekly", "https://golangweekly.com", "Go の週刊ニュースレター"),
+      en("https://this-week-in-rust.org/rss.xml", "This Week in Rust", "https://this-week-in-rust.org", "Rust の週刊まとめ"),
+      en("https://sreweekly.com/feed/", "SRE Weekly", "https://sreweekly.com", "障害事例と信頼性エンジニアリングの週刊まとめ"),
+    ],
+  },
+  {
+    id: "design",
+    title: "設計・エンジニアリング",
+    description: "システム設計・アーキテクチャ・開発組織の読み物",
+    folder: "設計",
+    feeds: [
+      en("https://newsletter.pragmaticengineer.com/feed", "The Pragmatic Engineer", "https://newsletter.pragmaticengineer.com", "大手テック企業の開発組織と業界動向の深掘り"),
+      en("https://blog.bytebytego.com/feed", "ByteByteGo", "https://blog.bytebytego.com", "システム設計を図解で解説"),
+      en("https://martinfowler.com/feed.atom", "Martin Fowler", "https://martinfowler.com", "ソフトウェア設計・アーキテクチャの定番"),
+      en("https://feed.infoq.com/", "InfoQ", "https://www.infoq.com", "アーキテクチャ・開発プロセスの記事とカンファレンス講演"),
+      ja("https://www.infoq.com/jp/feed/", "InfoQ Japan", "https://www.infoq.com/jp/", "InfoQ の日本語版。更新は少なめ"),
+      en("https://aws.amazon.com/blogs/architecture/feed/", "AWS Architecture Blog", "https://aws.amazon.com/blogs/architecture/", "AWS 上の設計パターンと事例"),
+      en("https://overreacted.io/rss.xml", "overreacted", "https://overreacted.io", "Dan Abramov のブログ。React と考え方の話"),
     ],
   },
   {
@@ -128,6 +163,7 @@ export const CATALOG: CatalogCategory[] = [
       en("https://cloudblog.withgoogle.com/rss/", "Google Cloud Blog", "https://cloud.google.com/blog", "Google Cloud の公式ブログ"),
       en("https://blog.cloudflare.com/rss/", "Cloudflare Blog", "https://blog.cloudflare.com", "ネットワーク・セキュリティの深い技術記事"),
       en("https://kubernetes.io/feed.xml", "Kubernetes Blog", "https://kubernetes.io/blog/", "Kubernetes 公式ブログ"),
+      ja("https://syu-m-5151.hatenablog.com/feed", "じゃあ、おうちで学べる", "https://syu-m-5151.hatenablog.com", "SRE・インフラ・キャリアの個人ブログ"),
       en("https://github.blog/changelog/feed/", "GitHub Changelog", "https://github.blog/changelog/", "GitHub の細かな機能追加・変更"),
       ja("https://qiita.com/tags/aws/feed", "Qiita: AWS", "https://qiita.com/tags/aws", "Qiita の AWS タグの新着"),
     ],
@@ -160,6 +196,28 @@ export const CATALOG: CatalogCategory[] = [
       ja("https://developer.hatenastaff.com/feed", "はてな", "https://developer.hatenastaff.com", "Hatena Developer Blog"),
       ja("https://techblog.zozo.com/feed", "ZOZO", "https://techblog.zozo.com", "ZOZO TECH BLOG"),
       ja("https://moneyforward-dev.jp/feed", "マネーフォワード", "https://moneyforward-dev.jp", "Money Forward Developers Blog"),
+      ja("https://blog.cybozu.io/feed", "サイボウズ", "https://blog.cybozu.io", "Cybozu Inside Out"),
+      ja("https://tech.layerx.co.jp/feed", "LayerX", "https://tech.layerx.co.jp", "LayerX エンジニアブログ"),
+      ja("https://www.m3tech.blog/feed", "エムスリー", "https://www.m3tech.blog", "エムスリーテックブログ"),
+      ja("https://tech.findy.co.jp/feed", "Findy", "https://tech.findy.co.jp", "Findy Tech Blog"),
+      ja("https://tech.timee.co.jp/feed", "タイミー", "https://tech.timee.co.jp", "Timee Product Team Blog"),
+      ja("https://tech.pepabo.com/feed.xml", "ペパボ", "https://tech.pepabo.com", "Pepabo Tech Portal"),
+      ja("https://mixi-developers.mixi.co.jp/feed", "MIXI", "https://mixi-developers.mixi.co.jp", "MIXI DEVELOPERS"),
+    ],
+  },
+  {
+    id: "global-techblog",
+    title: "海外テックブログ",
+    description: "海外企業のエンジニアリングブログ",
+    folder: "海外テックブログ",
+    feeds: [
+      en("https://netflixtechblog.com/feed", "Netflix", "https://netflixtechblog.com", "Netflix TechBlog"),
+      en("https://stripe.com/blog/feed.rss", "Stripe", "https://stripe.com/blog", "Stripe の技術・プロダクトの記事"),
+      en("https://engineering.fb.com/feed/", "Meta", "https://engineering.fb.com", "Engineering at Meta"),
+      en("https://shopify.engineering/blog.atom", "Shopify", "https://shopify.engineering", "Shopify Engineering"),
+      en("https://tailscale.com/blog/index.xml", "Tailscale", "https://tailscale.com/blog", "ネットワーク・WireGuard の深い技術記事"),
+      en("https://planetscale.com/blog/feed.atom", "PlanetScale", "https://planetscale.com/blog", "データベース・MySQL / Postgres の技術記事"),
+      en("https://fly.io/blog/feed.xml", "Fly.io", "https://fly.io/blog", "インフラと分散システムの読み物"),
     ],
   },
   {
