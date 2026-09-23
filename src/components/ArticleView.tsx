@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { fullDate, hostOf } from "@/lib/format";
+import { fullDate, hostOf, relativeTime } from "@/lib/format";
 import { startsInHorizontalScroller, useHorizontalSwipe } from "@/lib/gestures";
 import type { Article, Buzz } from "@/lib/types";
 import { BuzzLine } from "./ArticleList";
@@ -28,6 +28,11 @@ type Props = {
   onNext?: () => void;
   sources: string[];
   buzz: Buzz | undefined;
+  /** タイトルと要約の語が近い記事 (同じ話題として束ねたものは除く) */
+  related: Article[];
+  titleJa: (article: Article) => string | undefined;
+  isArticleRead: (id: string) => boolean;
+  onOpenRelated: (article: Article) => void;
   className?: string;
 };
 
@@ -43,6 +48,10 @@ export function ArticleView({
   onNext,
   sources,
   buzz,
+  related,
+  titleJa,
+  isArticleRead,
+  onOpenRelated,
   className = "",
 }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -297,6 +306,15 @@ export function ArticleView({
                 <Icon.External className="h-3.5 w-3.5" />
               </a>
             )}
+
+            {related.length > 0 && (
+              <RelatedList
+                articles={related}
+                titleJa={titleJa}
+                isRead={isArticleRead}
+                onOpen={onOpenRelated}
+              />
+            )}
           </div>
         </div>
 
@@ -320,6 +338,56 @@ export function ArticleView({
           />
         )}
       </div>
+    </section>
+  );
+}
+
+/** 本文の下に出す関連記事。スマホでも見えるよう右パネルではなくここに置く */
+function RelatedList({
+  articles,
+  titleJa,
+  isRead,
+  onOpen,
+}: {
+  articles: Article[];
+  titleJa: (article: Article) => string | undefined;
+  isRead: (id: string) => boolean;
+  onOpen: (article: Article) => void;
+}) {
+  return (
+    <section className="mt-14 border-t border-line pt-6">
+      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted">関連記事</h2>
+      <ul className="space-y-1">
+        {articles.map((a) => {
+          const ja = titleJa(a);
+          const read = isRead(a.id);
+          return (
+            <li key={a.id}>
+              <button
+                type="button"
+                onClick={() => onOpen(a)}
+                className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-line/40"
+              >
+                <FeedIcon siteUrl={a.link || ""} title={a.feedTitle} size={16} className="mt-0.5" />
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`flex items-start gap-1.5 text-[13.5px] leading-snug ${
+                      read ? "text-muted" : "font-medium text-ink"
+                    }`}
+                  >
+                    {ja && <TranslatedBadge size={15} className="mt-px" />}
+                    <span className="line-clamp-2">{ja ?? a.title}</span>
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11.5px] text-muted">
+                    {a.feedTitle}
+                    {a.publishedAt && ` · ${relativeTime(a.publishedAt)}`}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

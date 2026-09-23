@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HttpError, decodeBody, fetchWithLimit, safeUrl } from "@/lib/net";
 import { looksLikeFeed, parseFeed } from "@/lib/rss";
+import { channelFeedFromPage, feedsFor } from "@/lib/sources";
 import type { Candidate } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -71,6 +72,16 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = safeUrl(raw);
+
+    // YouTube・GitHub など、URL の形からフィードが決まるサービス
+    const known = feedsFor(url);
+    if (known.length > 0) {
+      const found = (await Promise.all(known.map(describe))).filter((p) => p !== null);
+      if (found.length > 0) {
+        return NextResponse.json({ candidates: found.map((p) => p.candidate) });
+      }
+    }
+
     const { body, contentType, finalUrl } = await fetchWithLimit(url, {
       accept: "text/html, application/xhtml+xml, application/xml;q=0.9, */*;q=0.8",
     });
@@ -94,7 +105,9 @@ export async function GET(req: NextRequest) {
 
     // HTML なら autodiscovery → だめなら定番パスを総当たり
     const seen = new Set<string>();
+    const channel = channelFeedFromPage(new URL(finalUrl), doc);
     const guesses = [
+      ...(channel ? [channel] : []),
       ...linkTags(doc, finalUrl),
       ...COMMON_PATHS.map((p) => new URL(p, finalUrl).toString()),
     ].filter((u) => (seen.has(u) ? false : (seen.add(u), true)));

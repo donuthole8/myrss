@@ -134,9 +134,9 @@ export function Sidebar({
     <aside className="flex w-64 shrink-0 flex-col border-r border-line bg-bg">
       <div className="flex items-center gap-2 px-3 py-3">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-ink">
-          <Icon.Rss className="h-4 w-4" />
+          <Icon.Coffee className="h-4 w-4" />
         </span>
-        <span className="text-[15px] font-semibold tracking-tight">Reedly</span>
+        <span className="text-[15px] font-semibold tracking-tight">Coffeed</span>
         <div className="ml-auto flex items-center gap-0.5">
           <button
             type="button"

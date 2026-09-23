@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CATALOG_SIZE } from "@/lib/presets";
+import { SUPPORTED_SERVICES } from "@/lib/sources";
 import type { Candidate } from "@/lib/types";
 import { FeedIcon, Icon, Spinner } from "./ui";
 
@@ -95,7 +96,7 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, o
               ref={input}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="サイトURL または フィードURL"
+              placeholder="サイト・YouTube・GitHub などのURL"
               className="flex-1 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
             />
             <button
@@ -110,6 +111,8 @@ export function AddFeedDialog({ folders, subscribedUrls, onClose, onSubscribe, o
 
           <p className="mt-2 text-[11px] text-muted">
             サイトのトップページを入れると、ページ内のフィード指定と定番パスから自動で探します。
+            RSS の無いサービスも、チャンネル・リポジトリ・ユーザーのページの URL を貼れば購読できます（
+            {SUPPORTED_SERVICES.join("・")}）。
           </p>
 
           {error && (

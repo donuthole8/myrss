@@ -22,6 +22,7 @@ import {
   type Persisted,
   type Theme,
 } from "@/lib/store";
+import { buildRelatedIndex, relatedTo } from "@/lib/related";
 import { buildStories, heatOf, isHot, leadOf, normalizeLink } from "@/lib/stories";
 import { loadHistory, record, rising, saveHistory, type TrendHistory } from "@/lib/trends";
 import {
@@ -574,10 +575,24 @@ export function Reader() {
     [history, lastUpdated],
   );
 
-  const selected = useMemo(
-    () => visible.find((a) => a.id === selectedId) ?? null,
-    [visible, selectedId],
+  // 関連記事から開いた記事は今の一覧に無いことがあるので、購読全体とスターからも探す
+  const relatedIndex = useMemo(
+    () => buildRelatedIndex([...allArticles, ...state.starred], titleJa),
+    [allArticles, state.starred, titleJa],
   );
+
+  const selected = useMemo(
+    () =>
+      visible.find((a) => a.id === selectedId) ??
+      (selectedId ? relatedIndex.byId.get(selectedId) ?? null : null),
+    [visible, selectedId, relatedIndex],
+  );
+
+  const related = useMemo(() => {
+    if (!selected) return [];
+    const sameStory = new Set(storyFor(selected)?.articles.map((a) => a.id));
+    return relatedTo(relatedIndex, selected, sameStory);
+  }, [selected, relatedIndex, storyFor]);
 
   const listTitle = useMemo(() => {
     switch (view.kind) {
@@ -1106,6 +1121,10 @@ export function Reader() {
         onNext={selected && visible[visible.length - 1]?.id !== selected.id ? () => move(1) : undefined}
         sources={selected ? sourcesOf(selected) : []}
         buzz={selected ? buzzOf(selected) : undefined}
+        related={related}
+        titleJa={titleJa}
+        isArticleRead={isRead}
+        onOpenRelated={openArticle}
       />
 
       {addOpen && (
