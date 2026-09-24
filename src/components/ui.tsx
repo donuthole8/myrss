@@ -188,6 +188,18 @@ export const Icon = {
       <path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" />
     </Svg>
   ),
+  Layers: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="m12 3 9 4.5-9 4.5-9-4.5z" />
+      <path d="m3 12 9 4.5 9-4.5" />
+      <path d="m3 16.5 9 4.5 9-4.5" />
+    </Svg>
+  ),
+  Shield: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z" />
+    </Svg>
+  ),
   PanelRight: (p: IconProps) => (
     <Svg {...p}>
       <rect x="3" y="4" width="18" height="16" rx="2" />

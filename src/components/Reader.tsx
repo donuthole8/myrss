@@ -11,6 +11,7 @@ import {
 import { downloadFile, fromOpml, toOpml } from "@/lib/opml";
 import {
   SORT_ORDER,
+  STACK_FOLDER,
   UNCATEGORIZED,
   WATCH_FOLDER,
   googleNewsUrl,
@@ -32,6 +33,7 @@ import {
   featuresOf,
   isTrained,
   learn,
+  likedTokenOf,
   loadModel,
   matchesAny,
   saveModel,
@@ -39,6 +41,9 @@ import {
   type Model,
   type Signal,
 } from "@/lib/prefer";
+import { importanceOf } from "@/lib/importance";
+import { stackMatches, uniqueTerms, type Pkg, type StackRelease } from "@/lib/stack";
+import { MORE_COUNT, TODAY_WINDOW_MS, dayKey, pick, rank } from "@/lib/today";
 import { aiFeedUrls, isAiArticle } from "@/lib/topics";
 import {
   loadTranslations,
@@ -52,12 +57,13 @@ import { isKnown, loadOgp, needsOgp, requestOgp, saveOgp, withOgp, type OgpCache
 import type { Article, Buzz, Candidate, Feed, FeedResult, View } from "@/lib/types";
 import { AddFeedDialog } from "./AddFeedDialog";
 import { FeedCatalog } from "./FeedCatalog";
-import { ArticleList } from "./ArticleList";
+import { ArticleList, type Label, type TodayProgress } from "./ArticleList";
 import { ArticleView } from "./ArticleView";
 import { EditFeedDialog, EditFolderDialog } from "./EditDialogs";
 import { PrefsDialog } from "./PrefsDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Sidebar } from "./Sidebar";
+import { StackDialog } from "./StackDialog";
 
 const AUTO_REFRESH_MS = 15 * 60 * 1000;
 const THEME_ORDER: Theme[] = ["system", "light", "dark"];
@@ -88,6 +94,7 @@ export function Reader() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [stackOpen, setStackOpen] = useState(false);
   const [model, setModel] = useState<Model>(loadModel);
   const [translations, setTranslations] = useState<Translations>(loadTranslations);
   const [translateError, setTranslateError] = useState<string | null>(null);
@@ -104,6 +111,8 @@ export function Reader() {
   /** 記事URL -> Qiita / Zenn のいいね数 */
   const [likes, setLikes] = useState<Record<string, number>>({});
   const buzzAsked = useRef(new Map<string, number>());
+  /** 最初のはてブ数が届いたか。今日の分は話題度が分かってから選ぶ */
+  const [buzzSettled, setBuzzSettled] = useState(false);
   const [history, setHistory] = useState<TrendHistory>(loadHistory);
   const [toast, setToast] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -390,10 +399,147 @@ export function Reader() {
     [unreadByFeed],
   );
 
+  /* ---------- マイスタック ---------- */
+
+  const stackTerms = state.stack.terms;
+  const stackFeeds = useMemo(
+    () => new Set(state.feeds.filter((f) => f.folder === STACK_FOLDER).map((f) => f.url)),
+    [state.feeds],
+  );
+  // フィード名も見る。リリースのフィードは記事タイトルが版番号だけなので
+  const stackOf = useCallback(
+    (article: Article) =>
+      stackTerms.length === 0
+        ? []
+        : stackMatches(`${article.title}\n${titleJa(article) ?? ""}\n${article.feedTitle}`, stackTerms),
+    [stackTerms, titleJa],
+  );
+  const inStack = useCallback(
+    (article: Article) => stackFeeds.has(article.feedUrl) || stackOf(article).length > 0,
+    [stackFeeds, stackOf],
+  );
+
+  const labelsOf = useCallback(
+    (article: Article): Label[] => {
+      const imp = importanceOf(article, titleJa(article));
+      const terms = stackOf(article);
+      const mine = terms.length > 0 || stackFeeds.has(article.feedUrl);
+      const labels: Label[] = [];
+      if (imp.security) {
+        labels.push({ text: "セキュリティ", tone: "danger", title: "脆弱性・セキュリティ修正に触れています" });
+      }
+      if (imp.release === "major") {
+        labels.push({ text: "メジャーリリース", tone: mine ? "accent" : "muted", title: "互換性が崩れることがあります" });
+      } else if (imp.breaking) {
+        labels.push({ text: "破壊的変更", tone: mine ? "accent" : "muted", title: "非推奨・サポート終了などに触れています" });
+      }
+      for (const term of terms.slice(0, 2)) {
+        labels.push({ text: term, tone: "accent", title: "マイスタックに登録した技術" });
+      }
+      return labels;
+    },
+    [titleJa, stackOf, stackFeeds],
+  );
+
+  const stackUnread = useMemo(
+    () =>
+      stackTerms.length === 0 && stackFeeds.size === 0
+        ? null
+        : allArticles.filter((a) => !isRead(a.id) && !isMuted(a) && inStack(a)).length,
+    [stackTerms, stackFeeds, allArticles, isRead, isMuted, inStack],
+  );
+
+  /* ---------- 今日の N 本 ---------- */
+
+  const dailyCount = state.prefs.dailyCount;
+  const today = state.today;
+
+  // 候補は新しい未読。同じ話題は1本にして、好み・話題度・マイスタックで点を付ける
+  const todayPool = useMemo(() => {
+    if (!lastUpdated) return [];
+    const seenStories = new Set<string>();
+    const pool: Array<{ article: Article; score: number; reasons: string[] }> = [];
+    for (const a of allArticles) {
+      if (isRead(a.id) || isMuted(a)) continue;
+      if (a.publishedAt !== null && lastUpdated - a.publishedAt > TODAY_WINDOW_MS) continue;
+      const storyKey = storyOf.get(a.id);
+      if (storyKey) {
+        if (seenStories.has(storyKey)) continue;
+        seenStories.add(storyKey);
+      }
+      const story = storyFor(a);
+      const ja = titleJa(a);
+      const text = `${a.title}\n${ja ?? ""}\n${a.summary.slice(0, 300)}`;
+      const { score, reasons } = rank({
+        preference: scores.get(a.id) ?? 0,
+        heat: story ? heatOf(story, lastUpdated) : 0,
+        sources: story?.feeds.size ?? 1,
+        importance: importanceOf(a, ja),
+        stack: stackFeeds.has(a.feedUrl) && stackOf(a).length === 0 ? [a.feedTitle] : stackOf(a),
+        interest: interest.filter((k) => matchesAny(text, [k])),
+        liked: trained ? likedTokenOf(model, featuresOf(a, ja)) : null,
+        ageHours: a.publishedAt === null ? 24 : Math.max(0, (lastUpdated - a.publishedAt) / 3_600_000),
+      });
+      pool.push({ article: story && story.articles.length > 1 ? leadOf(story) : a, score, reasons });
+    }
+    return pool;
+  }, [
+    lastUpdated,
+    allArticles,
+    isRead,
+    isMuted,
+    storyOf,
+    storyFor,
+    titleJa,
+    scores,
+    stackFeeds,
+    stackOf,
+    interest,
+    trained,
+    model,
+  ]);
+
+  const choose = useCallback(
+    (count: number, already: Article[] = []) => {
+      const chosen = pick(todayPool, count, already);
+      return {
+        articles: chosen.map((c) => c.article),
+        reasons: Object.fromEntries(chosen.map((c) => [c.article.id, c.reasons])),
+      };
+    },
+    [todayPool],
+  );
+
+  // 日が変わって最初の更新で選ぶ。話題度を効かせたいので、はてブ数が届くのを待つ
+  useEffect(() => {
+    if (!lastUpdated || !buzzSettled || allArticles.length === 0) return;
+    const day = dayKey(lastUpdated);
+    if (today?.day === day) return;
+    const fresh = choose(dailyCount);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setState((prev) => (prev.today?.day === day ? prev : { ...prev, today: { day, ...fresh } }));
+  }, [lastUpdated, buzzSettled, allArticles.length, today?.day, choose, dailyCount]);
+
+  // 選んだあとで OGP の画像などが載った版があれば、そちらを出す
+  const todayArticles = useMemo(() => {
+    if (!today) return [];
+    const current = new Map(allArticles.map((a) => [a.id, a]));
+    return today.articles.map((a) => current.get(a.id) ?? a);
+  }, [today, allArticles]);
+
+  const todayUnread = useMemo(
+    () => todayArticles.filter((a) => !isRead(a.id)).length,
+    [todayArticles, isRead],
+  );
+
   const { visible, hiddenCount } = useMemo(() => {
     let list: Article[];
     if (view.kind === "starred") {
       list = state.starred;
+    } else if (view.kind === "today") {
+      list = todayArticles;
+    } else if (view.kind === "stack") {
+      list = allArticles.filter(inStack);
     } else if (view.kind === "topic") {
       list = allArticles.filter((a) => isAiArticle(a, aiFeeds, titleJa(a)));
     } else if (view.kind === "trending") {
@@ -413,7 +559,8 @@ export function Reader() {
 
     // いま開いている記事は、どの絞り込みでも勝手に消えないようにする
     const keep = (a: Article) => a.id === selectedId;
-    const ranked = view.kind === "starred" || view.kind === "trending";
+    // 今日の分は選んだ順のまま、読んだ記事も残して進み具合を見せる
+    const ranked = view.kind === "starred" || view.kind === "trending" || view.kind === "today";
     const recommended = state.prefs.sort === "recommended" && !ranked;
     const buzz = state.prefs.sort === "buzz" && !ranked;
     let hidden = 0;
@@ -427,7 +574,7 @@ export function Reader() {
     // 学習が浅いうちは並べ替えだけにする
     if (recommended && trained) hide((a) => (scores.get(a.id) ?? 0) < HIDE_BELOW);
 
-    if (state.prefs.unreadOnly && view.kind !== "starred") {
+    if (state.prefs.unreadOnly && view.kind !== "starred" && view.kind !== "today") {
       list = list.filter((a) => keep(a) || !isRead(a.id));
     }
 
@@ -448,7 +595,7 @@ export function Reader() {
     };
     // 話題ビューは作った時点で話題順に並んでいる
     const sorted =
-      view.kind === "trending"
+      view.kind === "trending" || view.kind === "today"
         ? list
         : recommended
           ? [...list].sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0) || byDate(a, b))
@@ -462,6 +609,8 @@ export function Reader() {
     namedByFeed,
     allArticles,
     trending,
+    todayArticles,
+    inStack,
     watchMatches,
     storyFor,
     now,
@@ -578,7 +727,10 @@ export function Reader() {
       )
       .map((a) => a.link)
       .slice(0, 600);
-    if (urls.length === 0) return;
+    if (urls.length === 0) {
+      setBuzzSettled(true);
+      return;
+    }
     for (const url of urls) asked.set(url, lastUpdated);
     void fetch("/api/buzz", {
       method: "POST",
@@ -596,7 +748,8 @@ export function Reader() {
       })
       .catch(() => {
         /* はてブ数は無くても困らない */
-      });
+      })
+      .finally(() => setBuzzSettled(true));
   }, [allArticles, lastUpdated]);
 
   // 取得した記事のタイトルを日ごとに数えて貯める
@@ -642,6 +795,10 @@ export function Reader() {
 
   const listTitle = useMemo(() => {
     switch (view.kind) {
+      case "today":
+        return `今日の${dailyCount}本`;
+      case "stack":
+        return "マイスタック";
       case "all":
         return "すべての記事";
       case "starred":
@@ -657,7 +814,7 @@ export function Reader() {
       case "feed":
         return state.feeds.find((f) => f.url === view.url)?.title ?? "フィード";
     }
-  }, [state.feeds, view]);
+  }, [state.feeds, view, dailyCount]);
 
   /* ---------- 操作 ---------- */
 
@@ -976,6 +1133,67 @@ export function Reader() {
     setState((prev) => ({ ...prev, filters }));
   }, []);
 
+  const saveStack = useCallback((stack: { terms: string[]; packages: Pkg[] }) => {
+    setState((prev) => ({ ...prev, stack }));
+  }, []);
+
+  // リリースのフィードは「Next.js のリリース」の名前で入れる。記事タイトルが版番号だけでも、どの技術か分かるように
+  const subscribeReleases = useCallback((releases: StackRelease[]) => {
+    if (releases.length === 0) return;
+    setState((prev) => {
+      const known = new Set(prev.feeds.map((f) => f.url));
+      const fresh: Feed[] = releases
+        .filter((r) => !known.has(r.feedUrl))
+        .map((r) => ({
+          url: r.feedUrl,
+          title: `${r.term} のリリース`,
+          siteUrl: `https://github.com/${r.repo}`,
+          folder: STACK_FOLDER,
+          addedAt: Date.now(),
+          renamed: true,
+        }));
+      if (fresh.length === 0) return prev;
+      return {
+        ...prev,
+        feeds: [...prev.feeds, ...fresh],
+        folders: [...new Set([...prev.folders, STACK_FOLDER])],
+        stack: { ...prev.stack, terms: uniqueTerms([...prev.stack.terms, ...releases.map((r) => r.term)]) },
+      };
+    });
+    setToast(`${releases.length}件のリリースを購読しました`);
+  }, []);
+
+  const todayProgress = useMemo((): TodayProgress | null => {
+    if (view.kind !== "today") return null;
+    const more = today ? choose(MORE_COUNT, today.articles) : null;
+    return {
+      read: todayArticles.length - todayUnread,
+      total: todayArticles.length,
+      onMore:
+        today && more && more.articles.length > 0
+          ? () =>
+              setState((prev) =>
+                prev.today
+                  ? {
+                      ...prev,
+                      today: {
+                        ...prev.today,
+                        articles: [...prev.today.articles, ...more.articles],
+                        reasons: { ...prev.today.reasons, ...more.reasons },
+                      },
+                    }
+                  : prev,
+              )
+          : null,
+      onRepick: () => {
+        const fresh = choose(dailyCount);
+        setState((prev) => ({ ...prev, today: { day: dayKey(lastUpdated ?? Date.now()), ...fresh } }));
+      },
+    };
+  }, [view.kind, today, todayArticles.length, todayUnread, choose, dailyCount, lastUpdated]);
+
+  const reasonsOf = useCallback((article: Article) => today?.reasons[article.id], [today]);
+
   /* ---------- キーボード ---------- */
 
   const move = useCallback(
@@ -1001,7 +1219,7 @@ export function Reader() {
         }
         return;
       }
-      if (addOpen || helpOpen || prefsOpen || catalogOpen || editing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (addOpen || helpOpen || prefsOpen || catalogOpen || stackOpen || editing || e.metaKey || e.ctrlKey || e.altKey) return;
 
       switch (e.key) {
         case "j":
@@ -1069,6 +1287,7 @@ export function Reader() {
     helpOpen,
     prefsOpen,
     catalogOpen,
+    stackOpen,
     editing,
     closeArticle,
     toggleRead,
@@ -1109,6 +1328,10 @@ export function Reader() {
           totalUnread={totalUnread}
           aiUnread={aiUnread}
           trendingUnread={trendingUnread}
+          dailyCount={dailyCount}
+          todayUnread={todayUnread}
+          stackUnread={stackUnread}
+          onOpenStack={() => setStackOpen(true)}
           watches={watchCounts}
           onAddWatch={addWatch}
           onRemoveWatch={removeWatch}
@@ -1154,7 +1377,7 @@ export function Reader() {
         unreadOnly={state.prefs.unreadOnly}
         onToggleUnreadOnly={toggleUnreadOnly}
         onMarkAllRead={markAllRead}
-        sort={view.kind === "starred" || view.kind === "trending" ? null : state.prefs.sort}
+        sort={view.kind === "starred" || view.kind === "trending" || view.kind === "today" ? null : state.prefs.sort}
         onToggleSort={toggleSort}
         hiddenCount={hiddenCount}
         training={trained ? null : model.events}
@@ -1163,6 +1386,9 @@ export function Reader() {
         onOpenNav={() => setNavOpen(true)}
         density={state.prefs.density}
         onBrowseCatalog={() => setCatalogOpen(true)}
+        labelsOf={labelsOf}
+        reasonsOf={view.kind === "today" ? reasonsOf : undefined}
+        today={todayProgress}
       />
 
       <ArticleView
@@ -1208,6 +1434,16 @@ export function Reader() {
           onClose={() => setCatalogOpen(false)}
         />
       )}
+      {stackOpen && (
+        <StackDialog
+          terms={state.stack.terms}
+          packages={state.stack.packages}
+          subscribedUrls={new Set(feedUrls)}
+          onSave={saveStack}
+          onSubscribeReleases={subscribeReleases}
+          onClose={() => setStackOpen(false)}
+        />
+      )}
       {prefsOpen && (
         <PrefsDialog
           translate={translate}
@@ -1223,6 +1459,8 @@ export function Reader() {
           onChangeReadingSize={(size) => setPref("readingSize", size)}
           readingFont={state.prefs.readingFont}
           onChangeReadingFont={(font) => setPref("readingFont", font)}
+          dailyCount={dailyCount}
+          onChangeDailyCount={(count) => setPref("dailyCount", count)}
           onClose={() => setPrefsOpen(false)}
         />
       )}

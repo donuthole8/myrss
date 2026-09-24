@@ -15,6 +15,12 @@ type Props = {
   aiUnread: number;
   /** 話題ランキングに載っている未読の数 */
   trendingUnread: number;
+  /** 今日の N 本の本数と、そのうち未読の数 */
+  dailyCount: number;
+  todayUnread: number;
+  /** マイスタックに関わる未読の数。未登録なら null */
+  stackUnread: number | null;
+  onOpenStack: () => void;
   watches: Array<{ keyword: string; unread: number }>;
   onAddWatch: (keyword: string, withNews: boolean) => void;
   onRemoveWatch: (keyword: string) => void;
@@ -64,6 +70,10 @@ export function Sidebar({
   totalUnread,
   aiUnread,
   trendingUnread,
+  dailyCount,
+  todayUnread,
+  stackUnread,
+  onOpenStack,
   watches,
   onAddWatch,
   onRemoveWatch,
@@ -92,8 +102,9 @@ export function Sidebar({
 
   // スマホは長押し、PC は右クリックで編集を開く
   const press = useLongPress((target) => {
-    const { feed, folder, watch } = target.dataset;
-    if (feed !== undefined) onEditFeed(feed);
+    const { feed, folder, watch, stack } = target.dataset;
+    if (stack !== undefined) onOpenStack();
+    else if (feed !== undefined) onEditFeed(feed);
     else if (folder !== undefined) onEditFolder(folder);
     else if (watch !== undefined && window.confirm(`ウォッチ「${watch}」をやめますか？`)) {
       onRemoveWatch(watch);
@@ -190,6 +201,16 @@ export function Sidebar({
           }
         }}
       >
+        <button
+          type="button"
+          className={rowClass("today")}
+          onClick={() => onSelectView({ kind: "today" })}
+          title="未読から、好み・話題・マイスタックで選んだ今日の分だけを読みます"
+        >
+          <Icon.Coffee className="h-4 w-4 shrink-0 opacity-80" />
+          <span className="truncate">今日の{dailyCount}本</span>
+          <Count value={todayUnread} active={current === "today"} />
+        </button>
         <button type="button" className={rowClass("all")} onClick={() => onSelectView({ kind: "all" })}>
           <Icon.Inbox className="h-4 w-4 shrink-0 opacity-80" />
           <span className="truncate">すべての記事</span>
@@ -224,6 +245,38 @@ export function Sidebar({
           <span className="truncate">話題</span>
           <Count value={trendingUnread} active={current === "trending"} />
         </button>
+        <div className="group/row relative">
+          <button
+            type="button"
+            data-longpress
+            data-stack=""
+            className={rowClass("stack")}
+            onClick={() => (stackUnread === null ? onOpenStack() : onSelectView({ kind: "stack" }))}
+            title="使っている技術に触れた記事と、そのリリース・セキュリティ情報をまとめます"
+          >
+            <Icon.Layers className="h-4 w-4 shrink-0 opacity-80" />
+            <span className="truncate">マイスタック</span>
+            {stackUnread === null ? (
+              <span className="ml-auto shrink-0 text-2xs text-muted">登録する</span>
+            ) : (
+              <Count value={stackUnread} active={current === "stack"} />
+            )}
+          </button>
+          {stackUnread !== null && (
+            <button
+              type="button"
+              aria-label="マイスタックを編集"
+              title="マイスタックを編集"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenStack();
+              }}
+              className="absolute right-1 top-1/2 hidden -translate-y-1/2 rounded bg-surface p-1 text-muted hover:text-ink pointer-fine:group-hover/row:block"
+            >
+              <Icon.Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
         <div className="mt-4">
           <div className="flex items-center gap-1 pl-1.5 pr-1">

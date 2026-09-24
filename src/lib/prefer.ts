@@ -160,6 +160,30 @@ export function scoreOf(model: Model, features: string[]): number {
   return known === 0 ? 0 : sum / Math.sqrt(known);
 }
 
+/** これより「好き」に寄っていない語は、おすすめの理由として出さない */
+const LIKED_MIN_RATIO = 1;
+const LIKED_MIN_COUNT = 2;
+
+/** 記事の語のうち、いちばん「好き」に寄っている語。フィード名 (feed:) は理由として分かりにくいので除く */
+export function likedTokenOf(model: Model, features: string[]): string | null {
+  const vocab = Object.keys(model.tokens).length + 1;
+  const [posTotal, negTotal] = model.totals;
+  let best: string | null = null;
+  let bestRatio = LIKED_MIN_RATIO;
+  for (const t of features) {
+    const counts = model.tokens[t];
+    if (!counts || counts[0] < LIKED_MIN_COUNT || t.startsWith("feed:")) continue;
+    const ratio =
+      Math.log((counts[0] + 1) / (posTotal + vocab)) -
+      Math.log((counts[1] + 1) / (negTotal + vocab));
+    if (ratio > bestRatio) {
+      best = t;
+      bestRatio = ratio;
+    }
+  }
+  return best;
+}
+
 /* ---------- キーワード ---------- */
 
 /** 改行・カンマ区切りの入力をキーワード配列に */

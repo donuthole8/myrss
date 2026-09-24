@@ -1,3 +1,5 @@
+import type { Ecosystem, Pkg } from "./stack";
+import { DAILY_COUNTS, parseTodayPick, type DailyCount, type TodayPick } from "./today";
 import type { Article, Feed } from "./types";
 
 const KEY = "feedly-clone:v1";
@@ -21,6 +23,10 @@ export type Watch = {
 };
 
 export const WATCH_FOLDER = "ウォッチ";
+/** マイスタックから購読したリリースの入れ先 */
+export const STACK_FOLDER = "マイスタック";
+
+const ECOSYSTEMS: Ecosystem[] = ["npm", "composer", "pypi", "go", "cargo", "rubygems"];
 
 export function googleNewsUrl(keyword: string): string {
   return `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=ja&gl=JP&ceid=JP:ja`;
@@ -44,6 +50,8 @@ export type Persisted = {
     density: Density;
     readingSize: ReadingSize;
     readingFont: ReadingFont;
+    /** 今日の N 本の本数 */
+    dailyCount: DailyCount;
   };
   filters: {
     /** タイトルに含まれていたら隠す */
@@ -52,6 +60,14 @@ export type Persisted = {
     interest: string[];
   };
   watches: Watch[];
+  stack: {
+    /** 記事の照合に使う名前 */
+    terms: string[];
+    /** 設定ファイルから読んだパッケージ。リリースを探すのに使う */
+    packages: Pkg[];
+  };
+  /** 今日の N 本。その日のうちは選び直さない */
+  today: TodayPick | null;
 };
 
 const DEFAULT_FEEDS: Feed[] = [
@@ -78,9 +94,12 @@ export function initialState(): Persisted {
       density: "comfortable",
       readingSize: "m",
       readingFont: "serif",
+      dailyCount: 15,
     },
     filters: { mute: [], interest: [] },
     watches: [],
+    stack: { terms: [], packages: [] },
+    today: null,
   };
 }
 
@@ -135,6 +154,9 @@ export function loadState(): Persisted {
           ? parsed.prefs!.readingSize
           : "m",
         readingFont: parsed.prefs?.readingFont === "sans" ? "sans" : "serif",
+        dailyCount: DAILY_COUNTS.includes(parsed.prefs?.dailyCount as DailyCount)
+          ? parsed.prefs!.dailyCount
+          : 15,
       },
       filters: {
         mute: stringList(parsed.filters?.mute),
@@ -147,6 +169,16 @@ export function loadState(): Persisted {
               (w.feedUrl === null || typeof w.feedUrl === "string"),
           )
         : [],
+      stack: {
+        terms: stringList(parsed.stack?.terms),
+        packages: Array.isArray(parsed.stack?.packages)
+          ? parsed.stack.packages.filter(
+              (p): p is Pkg =>
+                !!p && typeof p.name === "string" && p.name.length > 0 && ECOSYSTEMS.includes(p.ecosystem),
+            )
+          : [],
+      },
+      today: parseTodayPick(parsed.today),
     };
   } catch {
     return initialState();

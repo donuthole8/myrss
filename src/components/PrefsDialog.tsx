@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { parseKeywords } from "@/lib/prefer";
 import type { Density, Persisted, ReadingFont, ReadingSize } from "@/lib/store";
+import { DAILY_COUNTS, type DailyCount } from "@/lib/today";
 import { Icon, Segmented } from "./ui";
 
 type Props = {
@@ -20,6 +21,8 @@ type Props = {
   onChangeReadingSize: (size: ReadingSize) => void;
   readingFont: ReadingFont;
   onChangeReadingFont: (font: ReadingFont) => void;
+  dailyCount: DailyCount;
+  onChangeDailyCount: (count: DailyCount) => void;
   onClose: () => void;
 };
 
@@ -37,6 +40,8 @@ export function PrefsDialog({
   onChangeReadingSize,
   readingFont,
   onChangeReadingFont,
+  dailyCount,
+  onChangeDailyCount,
   onClose,
 }: Props) {
   const [mute, setMute] = useState(filters.mute.join("\n"));
@@ -99,6 +104,15 @@ export function PrefsDialog({
                     { value: "comfortable", label: "標準" },
                     { value: "compact", label: "コンパクト" },
                   ]}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>今日の分</span>
+                <Segmented
+                  label="今日の分の本数"
+                  value={String(dailyCount) as `${DailyCount}`}
+                  onChange={(v) => onChangeDailyCount(Number(v) as DailyCount)}
+                  options={DAILY_COUNTS.map((n) => ({ value: String(n) as `${DailyCount}`, label: `${n}本` }))}
                 />
               </div>
               <div className="flex items-center justify-between gap-3">

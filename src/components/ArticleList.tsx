@@ -8,6 +8,18 @@ import type { Rising } from "@/lib/trends";
 import type { Article, Buzz } from "@/lib/types";
 import { FeedIcon, Icon, Spinner, TranslatedBadge } from "./ui";
 
+/** 記事に付ける目印。danger はセキュリティ修正など見逃すと困るものだけに使う */
+export type Label = { text: string; tone: "danger" | "accent" | "muted"; title?: string };
+
+/** 今日の N 本の進み具合 */
+export type TodayProgress = {
+  read: number;
+  total: number;
+  /** もう何本か足す。足せる記事が無ければ null */
+  onMore: (() => void) | null;
+  onRepick: () => void;
+};
+
 const SORT_LABEL: Record<SortMode, string> = {
   latest: "新着順",
   recommended: "おすすめ",
@@ -55,6 +67,12 @@ type Props = {
   density: Density;
   /** 空のときに出す「おすすめから探す」 */
   onBrowseCatalog: () => void;
+  /** セキュリティ・メジャーリリース・マイスタックなどの目印 */
+  labelsOf: (article: Article) => Label[];
+  /** 今日の N 本で、選んだ理由 */
+  reasonsOf?: (article: Article) => string[] | undefined;
+  /** 今日の N 本を見ているときだけ渡す */
+  today?: TodayProgress | null;
 };
 
 export function ArticleList({
@@ -89,6 +107,9 @@ export function ArticleList({
   onOpenNav,
   density,
   onBrowseCatalog,
+  labelsOf,
+  reasonsOf,
+  today = null,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const learning = sort === "recommended" ? training : null;
@@ -266,9 +287,11 @@ export function ArticleList({
           </div>
         )}
 
+        {today && today.total > 0 && <TodayHeader today={today} />}
+
         {articles.length === 0 && loading && <SkeletonRows density={density} />}
 
-        {articles.length === 0 && !loading && (
+        {articles.length === 0 && !loading && !today && (
           <EmptyState
             query={query}
             unreadOnly={unreadOnly}
@@ -289,12 +312,16 @@ export function ArticleList({
             selected={article.id === selectedId}
             sources={sourcesOf(article)}
             buzz={buzzOf(article)}
+            labels={labelsOf(article)}
+            reasons={reasonsOf?.(article)}
             onSelect={onSelect}
             onToggleStar={onToggleStar}
             onToggleRead={onToggleRead}
             compact={density === "compact"}
           />
         ))}
+
+        {today && <TodayFooter today={today} loading={loading} />}
       </div>
     </section>
   );
@@ -312,6 +339,8 @@ function ArticleRow({
   selected,
   sources,
   buzz,
+  labels,
+  reasons,
   onSelect,
   onToggleStar,
   onToggleRead,
@@ -325,6 +354,8 @@ function ArticleRow({
   selected: boolean;
   sources: string[];
   buzz: Buzz | undefined;
+  labels: Label[];
+  reasons: string[] | undefined;
   onSelect: (article: Article) => void;
   onToggleStar: (article: Article) => void;
   onToggleRead: (article: Article) => void;
@@ -432,7 +463,13 @@ function ArticleRow({
                 <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{summary}</p>
               )}
 
+              {labels.length > 0 && <LabelLine labels={labels} />}
               {!compact && <BuzzLine sources={sources} buzz={buzz} />}
+              {reasons && reasons.length > 0 && (
+                <p className="mt-1 truncate text-2xs text-muted" title="今日の分に選んだ理由">
+                  {reasons.join(" · ")}
+                </p>
+              )}
             </div>
           </div>
 
@@ -450,6 +487,100 @@ function ArticleRow({
           )}
         </div>
       </article>
+    </div>
+  );
+}
+
+const LABEL_TONE: Record<Label["tone"], string> = {
+  danger: "bg-danger/10 text-danger font-semibold",
+  accent: "bg-accent-soft text-accent font-medium",
+  muted: "bg-line/60 text-muted",
+};
+
+function LabelLine({ labels }: { labels: Label[] }) {
+  return (
+    <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1 text-2xs">
+      {labels.map((l) => (
+        <span key={l.text} title={l.title} className={`shrink-0 rounded px-1.5 py-px ${LABEL_TONE[l.tone]}`}>
+          {l.text}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TodayHeader({ today }: { today: TodayProgress }) {
+  const done = today.read >= today.total;
+  return (
+    <div className="mx-4 mb-1 mt-3">
+      <div className="flex items-center gap-2 text-2xs text-muted">
+        <span className="tabular-nums">
+          {done ? "今日の分は読み終わりました" : `${today.read} / ${today.total} 本 読了`}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm("今日の分を選び直しますか？（読んだ記事は外して選びます）")) today.onRepick();
+          }}
+          className="ml-auto rounded px-1 hover:text-ink"
+          title="いまある記事から選び直す"
+        >
+          選び直す
+        </button>
+      </div>
+      <div
+        className="mt-1.5 h-1 overflow-hidden rounded-full bg-line"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={today.total}
+        aria-valuenow={today.read}
+        aria-label="今日の分の進み具合"
+      >
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-300"
+          style={{ width: `${Math.min(100, (today.read / today.total) * 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** 一覧の終わり。読み切ったら区切りを付けて、そこで閉じてよいと伝える */
+function TodayFooter({ today, loading }: { today: TodayProgress; loading: boolean }) {
+  if (today.total === 0) {
+    return (
+      <div className="flex flex-col items-center px-6 py-14 text-center">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-accent">
+          {loading ? <Spinner className="h-5 w-5" /> : <Icon.Coffee className="h-5 w-5" />}
+        </span>
+        <p className="mt-3 text-sm font-medium">{loading ? "今日の分を選んでいます" : "新しい記事はまだありません"}</p>
+        {!loading && <p className="mt-1 text-xs text-muted">ここ2日の未読がたまったら、ここに並びます。</p>}
+      </div>
+    );
+  }
+  const done = today.read >= today.total;
+  return (
+    <div className="flex flex-col items-center px-6 pb-10 pt-6 text-center">
+      {done ? (
+        <>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <Icon.Check className="h-5 w-5" />
+          </span>
+          <p className="mt-3 text-sm font-medium">今日はここまで</p>
+          <p className="mt-1 text-xs text-muted">残りは読まなくても大丈夫です。気になれば「すべての記事」からどうぞ。</p>
+        </>
+      ) : (
+        <p className="text-2xs text-muted">あと {today.total - today.read} 本</p>
+      )}
+      {today.onMore && (
+        <button
+          type="button"
+          onClick={today.onMore}
+          className="mt-4 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+        >
+          もう少し読む
+        </button>
+      )}
     </div>
   );
 }

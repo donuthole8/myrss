@@ -52,6 +52,8 @@ export type FeedResult =
   | { ok: false; url: string; error: string };
 
 export type View =
+  /** 今日の N 本 */
+  | { kind: "today" }
   | { kind: "all" }
   | { kind: "starred" }
   /** 購読全体からキーワードで拾う横断ビュー */
@@ -60,11 +62,15 @@ export type View =
   | { kind: "trending" }
   /** 自分で登録したキーワードの横断ビュー */
   | { kind: "watch"; keyword: string }
+  /** マイスタックに関わる記事 */
+  | { kind: "stack" }
   | { kind: "folder"; name: string }
   | { kind: "feed"; url: string };
 
 export function viewKey(view: View): string {
   switch (view.kind) {
+    case "today":
+      return "today";
     case "all":
       return "all";
     case "starred":
@@ -75,6 +81,8 @@ export function viewKey(view: View): string {
       return "trending";
     case "watch":
       return `watch:${view.keyword}`;
+    case "stack":
+      return "stack";
     case "folder":
       return `folder:${view.name}`;
     case "feed":
