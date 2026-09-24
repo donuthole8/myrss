@@ -121,6 +121,11 @@ export const Icon = {
       <path d="M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z" />
     </Svg>
   ),
+  Dots: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth={3} />
+    </Svg>
+  ),
   X: (p: IconProps) => (
     <Svg {...p}>
       <path d="M6 6l12 12M18 6 6 18" />

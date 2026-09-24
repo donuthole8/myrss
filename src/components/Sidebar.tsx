@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLongPress } from "@/lib/gestures";
 import { UNCATEGORIZED, folderOf, type Theme } from "@/lib/store";
 import { type Feed, type View, viewKey } from "@/lib/types";
@@ -159,35 +159,18 @@ export function Sidebar({
           >
             {refreshing ? <Spinner /> : <Icon.Refresh />}
           </button>
-          <button
-            type="button"
-            onClick={onCycleTheme}
-            title={`テーマ: ${THEME_LABEL[theme]}`}
-            aria-label="テーマ切り替え"
-            className="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
-          >
-            {isDark ? <Icon.Moon /> : <Icon.Sun />}
-          </button>
+          {/* 追加は URL から / おすすめから の2通りを1つのボタンにまとめる */}
+          <PopMenu
+            label="フィードを追加"
+            align="right"
+            trigger={<Icon.Plus />}
+            triggerClass="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
+            items={[
+              { icon: <Icon.Rss className="h-3.5 w-3.5" />, label: "URL で追加", hint: "A", onSelect: onAddFeed },
+              { icon: <Icon.Sparkle className="h-3.5 w-3.5" />, label: "おすすめから探す", onSelect: onBrowseCatalog },
+            ]}
+          />
         </div>
-      </div>
-
-      <div className="px-3 pb-2">
-        <button
-          type="button"
-          onClick={onAddFeed}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-        >
-          <Icon.Plus />
-          フィードを追加
-        </button>
-        <button
-          type="button"
-          onClick={onBrowseCatalog}
-          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-ui text-muted transition-colors hover:bg-line/50 hover:text-ink"
-        >
-          <Icon.Sparkle className="h-3.5 w-3.5" />
-          おすすめから探す
-        </button>
       </div>
 
       <nav
@@ -371,11 +354,6 @@ export function Sidebar({
               </div>
             );
           })}
-          {watches.length === 0 && watchDraft === null && (
-            <p className="px-2 py-1 text-2xs leading-relaxed text-muted">
-              気になるキーワードを登録すると、全フィードから拾って1か所にまとめます。
-            </p>
-          )}
         </div>
 
         <div className="mt-4 space-y-3">
@@ -474,50 +452,48 @@ export function Sidebar({
             まだ購読がありません。「フィードを追加」からサイトのURLを入れてみてください。
           </p>
         )}
-        {feeds.length > 0 && (
-          <p className="mt-4 hidden px-2 text-2xs text-muted pointer-coarse:block">
-            フィードやフォルダを長押しすると、名前の変更・移動・購読解除ができます。
-          </p>
-        )}
       </nav>
 
       <div className="border-t border-line px-3 py-2">
-        <div className="flex items-center gap-1 text-muted">
-          <button
-            type="button"
-            onClick={() => fileInput.current?.click()}
-            title="OPMLを読み込む"
-            aria-label="OPMLを読み込む"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
-          >
-            <Icon.Upload className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={onExportOpml}
-            title="OPMLを書き出す"
-            aria-label="OPMLを書き出す"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
-          >
-            <Icon.Download className="h-3.5 w-3.5" />
-          </button>
+        <div className="flex items-center gap-0.5 text-muted">
           <button
             type="button"
             onClick={onOpenPrefs}
             title="表示・翻訳・ミュート・好みの学習"
-            aria-label="設定"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-ui hover:bg-line/60 hover:text-ink pointer-coarse:py-2.5"
           >
             <Icon.Sliders className="h-3.5 w-3.5" />
+            設定
           </button>
-          <button
-            type="button"
-            onClick={onShowShortcuts}
-            title="キーボードショートカット (?)"
-            className="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:hidden"
-          >
-            <Icon.Keyboard className="h-3.5 w-3.5" />
-          </button>
+          {/* たまにしか使わないものは「…」にしまう */}
+          <PopMenu
+            label="その他"
+            align="left"
+            placement="top"
+            trigger={<Icon.Dots className="h-4 w-4" />}
+            triggerClass="rounded-md p-1.5 hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
+            items={[
+              {
+                icon: isDark ? <Icon.Moon className="h-3.5 w-3.5" /> : <Icon.Sun className="h-3.5 w-3.5" />,
+                label: `テーマ: ${THEME_LABEL[theme]}`,
+                onSelect: onCycleTheme,
+                keepOpen: true,
+              },
+              {
+                icon: <Icon.Upload className="h-3.5 w-3.5" />,
+                label: "OPML を読み込む",
+                onSelect: () => fileInput.current?.click(),
+              },
+              { icon: <Icon.Download className="h-3.5 w-3.5" />, label: "OPML を書き出す", onSelect: onExportOpml },
+              {
+                icon: <Icon.Keyboard className="h-3.5 w-3.5" />,
+                label: "ショートカット",
+                hint: "?",
+                onSelect: onShowShortcuts,
+                fineOnly: true,
+              },
+            ]}
+          />
           <span className="ml-auto truncate text-2xs tabular-nums">
             {lastUpdated ? `更新 ${new Date(lastUpdated).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}` : ""}
           </span>
@@ -535,5 +511,101 @@ export function Sidebar({
         />
       </div>
     </aside>
+  );
+}
+
+type MenuItem = {
+  icon: React.ReactNode;
+  label: string;
+  /** キーボードショートカット */
+  hint?: string;
+  onSelect: () => void;
+  /** テーマの切り替えのように、続けて押せるよう開いたままにする */
+  keepOpen?: boolean;
+  /** マウス・キーボードのある環境でだけ出す */
+  fineOnly?: boolean;
+};
+
+/** ボタンで開く小さなメニュー。外側を押すか Esc で閉じる */
+function PopMenu({
+  label,
+  trigger,
+  triggerClass,
+  items,
+  align,
+  placement = "bottom",
+}: {
+  label: string;
+  trigger: React.ReactNode;
+  triggerClass: string;
+  items: MenuItem[];
+  align: "left" | "right";
+  placement?: "top" | "bottom";
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={(e) => {
+          // スマホのドロワーは中をタップすると閉じるので、メニューの開閉では閉じさせない
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className={`${triggerClass} ${open ? "bg-line/60 text-ink" : ""}`}
+      >
+        {trigger}
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className={`absolute z-20 w-52 rounded-xl border border-line bg-surface p-1 shadow-xl ${
+            align === "right" ? "right-0" : "left-0"
+          } ${placement === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5"}`}
+        >
+          {items.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              onClick={(e) => {
+                if (item.keepOpen) e.stopPropagation();
+                else setOpen(false);
+                item.onSelect();
+              }}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ui text-ink/85 hover:bg-line/50 hover:text-ink pointer-coarse:py-2.5 ${
+                item.fineOnly ? "pointer-coarse:hidden" : ""
+              }`}
+            >
+              <span className="shrink-0 text-muted">{item.icon}</span>
+              <span className="flex-1 truncate">{item.label}</span>
+              {item.hint && <kbd className="font-sans text-2xs text-muted">{item.hint}</kbd>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

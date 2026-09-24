@@ -14,9 +14,6 @@
   --accent-soft: #f1edfd;
   --star: #e0a213;
   --danger: #dc3b3b;
-  /* はてブ・HN で伸びている記事の数字 */
-  --hot: #e5484d;
-  --hot-hn: #e5720f;
 }
 
 .dark {
@@ -31,8 +28,6 @@
   --accent-soft: #2c2547;
   --star: #f0c04a;
   --danger: #f26d6d;
-  --hot: #ff6b6f;
-  --hot-hn: #f59a45;
 }
 
 @theme inline {
@@ -47,8 +42,6 @@
   --color-accent-soft: var(--accent-soft);
   --color-star: var(--star);
   --color-danger: var(--danger);
-  --color-hot: var(--hot);
-  --color-hot-hn: var(--hot-hn);
   /* 文字サイズはこの段階に寄せる: 2xs 11 / xs 12 / ui 13 / sm 14 / title 15 */
   --text-2xs: 11px;
   --text-ui: 13px;

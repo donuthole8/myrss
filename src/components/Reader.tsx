@@ -50,7 +50,6 @@ import {
   needsTranslation,
   requestTranslations,
   saveTranslations,
-  summarySnippet,
   type Translations,
 } from "@/lib/translate";
 import { isKnown, loadOgp, needsOgp, requestOgp, saveOgp, withOgp, type OgpCache } from "@/lib/ogp";
@@ -659,8 +658,9 @@ export function Reader() {
     return [...new Set(titles)];
   }, [visible, translate, translateDisabled, translations]);
 
-  const runTranslations = useCallback((texts: string[]) => {
-    const batch = texts.filter((t) => !attempted.current.has(t)).slice(0, 50);
+  // 表示中の英語タイトルを50件ずつ訳す。訳が届くと untranslated が縮んで次の束に進む
+  useEffect(() => {
+    const batch = untranslated.filter((t) => !attempted.current.has(t)).slice(0, 50);
     if (batch.length === 0) return;
     for (const t of batch) attempted.current.add(t);
     void requestTranslations(batch).then((outcome) => {
@@ -674,42 +674,7 @@ export function Reader() {
         setToast(outcome.error);
       }
     });
-  }, []);
-
-  // 表示中の英語タイトルを50件ずつ訳す。訳が届くと untranslated が縮んで次の束に進む
-  useEffect(() => {
-    runTranslations(untranslated);
-  }, [untranslated, runTranslations]);
-
-  // 抜粋は長く無料枠を食うので、画面に出た行の、見えている2行分だけを訳す
-  const summaryJa = useCallback(
-    (article: Article) => {
-      if (!translate) return undefined;
-      const snippet = summarySnippet(article.summary);
-      return snippet ? translations[snippet] : undefined;
-    },
-    [translate, translations],
-  );
-  const [summaryQueue, setSummaryQueue] = useState<string[]>([]);
-  const onSummariesShown = useCallback(
-    (articles: Article[]) => {
-      if (!translate || translateDisabled) return;
-      const snippets = articles
-        .map((a) => summarySnippet(a.summary))
-        .filter((t): t is string => !!t && !(t in translations) && !attempted.current.has(t));
-      if (snippets.length > 0) setSummaryQueue((prev) => [...new Set([...prev, ...snippets])]);
-    },
-    [translate, translateDisabled, translations],
-  );
-  useEffect(() => {
-    if (summaryQueue.length === 0) return;
-    // スクロール中に細切れで投げず、止まってからまとめて訳す
-    const timer = window.setTimeout(() => {
-      setSummaryQueue([]);
-      runTranslations(summaryQueue);
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [summaryQueue, runTranslations]);
+  }, [untranslated]);
 
   /* ---------- 話題度と急上昇キーワード ---------- */
 
@@ -1361,8 +1326,6 @@ export function Reader() {
         selectedId={selectedId}
         onSelect={visitArticle}
         translatedTitle={titleJa}
-        translatedSummary={summaryJa}
-        onSummariesShown={onSummariesShown}
         isRead={isRead}
         isStarred={(id) => starredIds.has(id)}
         onToggleStar={toggleStar}

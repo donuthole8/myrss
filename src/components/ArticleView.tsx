@@ -78,7 +78,7 @@ export function ArticleView({
   // Reader は ssr:false なので、初期値を localStorage から直接読んでよい
   const [panelOpen, setPanelOpen] = useState(() => {
     try {
-      return localStorage.getItem(PANEL_KEY) !== "0";
+      return localStorage.getItem(PANEL_KEY) === "1";
     } catch {
       return true;
     }
@@ -205,7 +205,7 @@ export function ArticleView({
   const title = showOriginal || !translatedTitle ? article.title : translatedTitle;
 
   const toolButton =
-    "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-line/60 hover:text-ink";
+    "rounded-lg p-2 text-muted transition-colors hover:bg-line/60 hover:text-ink";
 
   return (
     <section ref={sectionRef} className={`flex min-w-0 flex-1 flex-col bg-surface ${className}`}>
@@ -213,28 +213,41 @@ export function ArticleView({
         <button
           type="button"
           onClick={() => onToggleStar(article)}
+          aria-label={isStarred ? "スターを外す" : "スターを付ける"}
+          aria-pressed={isStarred}
+          title={isStarred ? "スターを外す (S)" : "スターを付ける (S)"}
           className={`${toolButton} ${isStarred ? "text-star hover:text-star" : ""}`}
         >
-          <Icon.Star filled={isStarred} className="h-3.5 w-3.5" />
-          <span className="max-sm:sr-only">{isStarred ? "スター付き" : "スター"}</span>
+          <Icon.Star filled={isStarred} className="h-4 w-4" />
         </button>
-        <button type="button" onClick={() => onToggleRead(article)} className={toolButton}>
-          <Icon.Check className="h-3.5 w-3.5" />
-          <span className="max-sm:sr-only">{isRead ? "未読に戻す" : "既読にする"}</span>
+        <button
+          type="button"
+          onClick={() => onToggleRead(article)}
+          aria-label={isRead ? "未読に戻す" : "既読にする"}
+          title={isRead ? "未読に戻す (M)" : "既読にする (M)"}
+          className={toolButton}
+        >
+          <Icon.Check className="h-4 w-4" />
         </button>
         <button
           type="button"
           onClick={() => onDislike(article)}
-          title="似た記事をおすすめしにくくして次へ (D)"
+          aria-label="興味なし"
+          title="興味なし: 似た記事をおすすめしにくくして次へ (D)"
           className={toolButton}
         >
-          <Icon.ThumbDown className="h-3.5 w-3.5" />
-          <span className="max-sm:sr-only">興味なし</span>
+          <Icon.ThumbDown className="h-4 w-4" />
         </button>
         {article.link && (
-          <a href={article.link} target="_blank" rel="noopener noreferrer" className={toolButton}>
-            <Icon.External className="h-3.5 w-3.5" />
-            <span className="max-sm:sr-only">元記事</span>
+          <a
+            href={article.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="元記事を開く"
+            title="元記事を開く (O)"
+            className={toolButton}
+          >
+            <Icon.External className="h-4 w-4" />
           </a>
         )}
         <div ref={typeMenuRef} className="relative ml-auto">
@@ -344,30 +357,26 @@ export function ArticleView({
                 title
               )}
             </h1>
-            {translatedTitle && (
-              <div className="mt-2.5">
-                <p className="text-sm leading-snug text-muted" lang={showOriginal ? "ja" : "en"}>
-                  {showOriginal ? translatedTitle : article.title}
-                </p>
-                <div className="mt-1.5 flex items-center gap-1.5 text-2xs text-muted">
-                  <TranslatedBadge size={16} />
-                  <span>DeepL で翻訳</span>
-                  <span className="opacity-50">·</span>
+            {/* 著者・日時・翻訳の切り替えは1行にまとめる */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+              {[
+                article.author && <span key="author">{article.author}</span>,
+                article.publishedAt && <time key="date">{fullDate(article.publishedAt)}</time>,
+                translatedTitle && (
                   <button
+                    key="original"
                     type="button"
                     onClick={() => setShowOriginal((v) => !v)}
-                    className="rounded-full border border-line px-2 py-px transition-colors hover:border-accent hover:text-accent"
+                    title={showOriginal ? translatedTitle : article.title}
+                    className="inline-flex items-center gap-1 transition-colors hover:text-accent"
                   >
-                    {showOriginal ? "訳を見出しにする" : "原文を見出しにする"}
+                    <TranslatedBadge size={14} />
+                    {showOriginal ? "訳を見る" : "原文を見る"}
                   </button>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-              {article.author && <span>{article.author}</span>}
-              {article.author && article.publishedAt && <span>·</span>}
-              {article.publishedAt && <time>{fullDate(article.publishedAt)}</time>}
+                ),
+              ]
+                .filter(Boolean)
+                .flatMap((node, i) => (i === 0 ? [node] : [<span key={`sep-${i}`} className="opacity-50">·</span>, node]))}
             </div>
             <BuzzLine sources={sources} buzz={buzz} />
 

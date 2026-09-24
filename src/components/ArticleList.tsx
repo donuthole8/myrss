@@ -33,10 +33,6 @@ type Props = {
   onSelect: (article: Article) => void;
   /** 訳があれば返す */
   translatedTitle: (article: Article) => string | undefined;
-  /** 抜粋の訳があれば返す */
-  translatedSummary: (article: Article) => string | undefined;
-  /** 抜粋が画面に入った記事。見えた分だけ訳すため */
-  onSummariesShown: (articles: Article[]) => void;
   isRead: (id: string) => boolean;
   isStarred: (id: string) => boolean;
   onToggleStar: (article: Article) => void;
@@ -81,8 +77,6 @@ export function ArticleList({
   selectedId,
   onSelect,
   translatedTitle,
-  translatedSummary,
-  onSummariesShown,
   isRead,
   isStarred,
   onToggleStar,
@@ -113,6 +107,9 @@ export function ArticleList({
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const learning = sort === "recommended" ? training : null;
+  const [searchFocused, setSearchOpen] = useState(false);
+  // 急上昇キーワードを選んだときなど、外から検索語が入ったときも開いておく
+  const searchOpen = searchFocused || query !== "";
   const pullRef = useRef<HTMLDivElement>(null);
   const pull = usePullToRefresh({
     scroller: listRef,
@@ -127,25 +124,6 @@ export function ArticleList({
     },
   });
 
-  // 画面に入った行を知らせる。抜粋を出さないコンパクト表示では要らない
-  useEffect(() => {
-    const root = listRef.current;
-    if (!root || density === "compact") return;
-    const byId = new Map(articles.map((a) => [a.id, a]));
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const shown = entries
-          .filter((e) => e.isIntersecting)
-          .map((e) => byId.get((e.target as HTMLElement).dataset.articleId ?? ""))
-          .filter((a): a is Article => !!a);
-        if (shown.length > 0) onSummariesShown(shown);
-      },
-      { root },
-    );
-    root.querySelectorAll("[data-article-id]").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [articles, density, onSummariesShown]);
-
   // キーボードで選択が動いたときに見える位置まで送る
   useEffect(() => {
     if (!selectedId || !listRef.current) return;
@@ -155,94 +133,101 @@ export function ArticleList({
 
   return (
     <section className={`flex w-full shrink-0 flex-col border-r border-line bg-surface md:w-[380px] lg:w-[420px] ${className}`}>
-      <header className="border-b border-line px-4 pb-2.5 pt-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onOpenNav}
-            aria-label="フィード一覧を開く"
-            className="-my-1.5 -ml-2 rounded-lg p-2 text-muted hover:bg-line/60 hover:text-ink md:hidden"
-          >
-            <Icon.Menu className="h-5 w-5" />
-          </button>
-          <h2 className="truncate text-title font-semibold tracking-tight">{title}</h2>
-          {loading && <Spinner className="h-3.5 w-3.5 text-muted" />}
-          <span className="ml-auto text-2xs tabular-nums text-muted">{articles.length}件</span>
-        </div>
+      <header className="flex items-center gap-1.5 border-b border-line px-4 py-2.5">
+        <button
+          type="button"
+          onClick={onOpenNav}
+          aria-label="フィード一覧を開く"
+          className="-my-1.5 -ml-2 shrink-0 rounded-lg p-2 text-muted hover:bg-line/60 hover:text-ink md:hidden"
+        >
+          <Icon.Menu className="h-5 w-5" />
+        </button>
 
-        <div className="mt-2.5 flex items-center gap-1.5">
-          <div className="relative flex-1">
-            <Icon.Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-            <input
-              ref={searchRef}
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="記事を検索"
-              title="記事を検索 (/)"
-              type="search"
-              enterKeyHint="search"
-              className="w-full rounded-lg border border-line bg-surface-2 py-1.5 pl-8 pr-2 text-ui outline-none placeholder:text-muted focus:border-accent"
-            />
-          </div>
-          {/* 絞り込みと並べ替えは1つの塊にまとめる */}
-          <div className="flex shrink-0 rounded-lg border border-line bg-surface-2 p-0.5">
+        {/* 検索欄は普段たたんでおき、虫眼鏡か / で開く。/ でフォーカスできるよう入力欄は常に置いておく */}
+        <div className={searchOpen ? "relative min-w-0 flex-1" : "sr-only"}>
+          <Icon.Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            onFocus={() => setSearchOpen(true)}
+            onBlur={() => setSearchOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key !== "Escape") return;
+              onQueryChange("");
+              setSearchOpen(false);
+              e.currentTarget.blur();
+            }}
+            placeholder="記事を検索"
+            type="search"
+            enterKeyHint="search"
+            className="w-full rounded-lg border border-line bg-surface-2 py-1 pl-8 pr-2 text-ui outline-none placeholder:text-muted focus:border-accent"
+          />
+        </div>
+        {!searchOpen && (
+          <>
+            <h2 className="min-w-0 truncate text-title font-semibold tracking-tight">{title}</h2>
+            <span
+              className="shrink-0 text-2xs tabular-nums text-muted"
+              title={hiddenCount > 0 ? `ほかに${hiddenCount}件を非表示（ミュート・興味の薄い記事）` : undefined}
+            >
+              {articles.length}
+            </span>
+            {loading && <Spinner className="h-3.5 w-3.5 shrink-0 text-muted" />}
             <button
               type="button"
-              onClick={onToggleUnreadOnly}
-              title="未読のみ表示 (U)"
-              aria-pressed={unreadOnly}
-              className={`whitespace-nowrap rounded-md px-2 py-1 text-2xs font-medium transition-colors ${
-                unreadOnly ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-ink"
-              }`}
+              onClick={() => searchRef.current?.focus()}
+              title="記事を検索 (/)"
+              aria-label="記事を検索"
+              className="ml-auto shrink-0 rounded-lg p-1.5 text-muted hover:bg-line/60 hover:text-ink"
             >
-              未読のみ
+              <Icon.Search className="h-4 w-4" />
             </button>
-            {sort && (
-              <button
-                type="button"
-                onClick={onToggleSort}
-                title="並べ替え: 新着順 → おすすめ → 話題順 (P)"
-                className={`flex items-center gap-0.5 whitespace-nowrap rounded-md px-2 py-1 text-2xs font-medium transition-colors ${
-                  sort !== "latest" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-ink"
-                }`}
-              >
-                {SORT_LABEL[sort]}
-                <Icon.Chevron className="h-3 w-3 rotate-90 opacity-60" />
-              </button>
-            )}
-          </div>
+          </>
+        )}
+
+        {/* 絞り込みと並べ替えは1つの塊にまとめる */}
+        <div className="flex shrink-0 rounded-lg border border-line bg-surface-2 p-0.5">
           <button
             type="button"
-            onClick={onMarkAllRead}
-            title="表示中をすべて既読にする"
-            aria-label="表示中をすべて既読にする"
-            className="shrink-0 rounded-lg border border-line bg-surface-2 p-1.5 text-muted hover:text-ink"
+            onClick={onToggleUnreadOnly}
+            title="未読のみ表示 (U)"
+            aria-pressed={unreadOnly}
+            className={`whitespace-nowrap rounded-md px-2 py-1 text-2xs font-medium transition-colors ${
+              unreadOnly ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-ink"
+            }`}
           >
-            <Icon.CheckAll className="h-3.5 w-3.5" />
+            未読
           </button>
+          {sort && (
+            <button
+              type="button"
+              onClick={onToggleSort}
+              title={[
+                "並べ替え: 新着順 → おすすめ → 話題順 (P)",
+                learning &&
+                  `好みを学習中（気になる ${Math.min(learning[0], 5)}/5・興味なし ${Math.min(learning[1], 5)}/5）。記事を開く・スターで「気になる」、D で「興味なし」として覚えます。`,
+              ]
+                .filter(Boolean)
+                .join("\n")}
+              className={`flex items-center gap-0.5 whitespace-nowrap rounded-md px-2 py-1 text-2xs font-medium transition-colors ${
+                sort !== "latest" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-ink"
+              }`}
+            >
+              {SORT_LABEL[sort]}
+              {learning && <span className="h-1 w-1 rounded-full bg-current opacity-60" aria-label="学習中" />}
+            </button>
+          )}
         </div>
-
-        {(learning || hiddenCount > 0) && (
-          <p
-            className="mt-1.5 flex items-center gap-1.5 truncate text-2xs text-muted"
-            title={[
-              learning &&
-                "記事を開く・スターで「気になる」、「興味なし」(D) で「興味なし」として覚えます。それぞれ5件たまると学習が効き始めます。",
-              hiddenCount > 0 && "ミュートしたキーワードを含む記事と、興味の薄い記事を隠しています。",
-            ]
-              .filter(Boolean)
-              .join("\n")}
-          >
-            {learning && (
-              <span className="flex items-center gap-1">
-                <Icon.Sparkle className="h-3 w-3 shrink-0" />
-                好みを学習中 {Math.min(learning[0], 5)}/5 · {Math.min(learning[1], 5)}/5
-              </span>
-            )}
-            {learning && hiddenCount > 0 && <span className="opacity-50">|</span>}
-            {hiddenCount > 0 && <span>{hiddenCount}件を非表示</span>}
-          </p>
-        )}
+        <button
+          type="button"
+          onClick={onMarkAllRead}
+          title="表示中をすべて既読にする"
+          aria-label="表示中をすべて既読にする"
+          className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-line/60 hover:text-ink"
+        >
+          <Icon.CheckAll className="h-4 w-4" />
+        </button>
       </header>
 
       <div ref={listRef} className="scroll-thin flex-1 overflow-y-auto overscroll-y-contain" {...pull}>
@@ -306,7 +291,6 @@ export function ArticleList({
             key={article.id}
             article={article}
             translated={translatedTitle(article)}
-            summary={translatedSummary(article) ?? article.summary}
             read={isRead(article.id)}
             starred={isStarred(article.id)}
             selected={article.id === selectedId}
@@ -333,7 +317,6 @@ const SWIPE_TRIGGER_PX = 72;
 function ArticleRow({
   article,
   translated,
-  summary,
   read,
   starred,
   selected,
@@ -348,7 +331,6 @@ function ArticleRow({
 }: {
   article: Article;
   translated: string | undefined;
-  summary: string;
   read: boolean;
   starred: boolean;
   selected: boolean;
@@ -424,47 +406,36 @@ function ArticleRow({
         } ${selected ? "bg-accent-soft" : "bg-surface hover:bg-surface-2"}`}
       >
         <div className="flex items-center gap-1.5 text-2xs text-muted">
-          <span className={`flex min-w-0 items-center gap-1.5 ${read ? "opacity-60" : ""}`}>
+          <span className="flex min-w-0 items-center gap-1.5">
             <FeedIcon siteUrl={article.link || ""} title={article.feedTitle} size={13} />
             <span className="truncate">{article.feedTitle}</span>
             <span className="shrink-0">·</span>
             <time className="shrink-0 tabular-nums">{relativeTime(article.publishedAt)}</time>
           </span>
-          <button
-            type="button"
-            aria-label={starred ? "スターを外す" : "スターを付ける"}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar(article);
-            }}
-            className={`-my-1 -mr-1 ml-auto shrink-0 rounded p-1 transition-colors hover:bg-line/60 pointer-coarse:-my-2.5 pointer-coarse:-mr-2.5 pointer-coarse:p-2.5 ${
-              starred
-                ? "text-star"
-                : "text-transparent group-hover:text-muted pointer-coarse:text-muted/40"
-            }`}
-          >
-            <Icon.Star filled={starred} className="h-3.5 w-3.5" />
-          </button>
+          {/* 付けるのはスワイプ・S キー・記事側のボタンで。ここでは付いていることだけ示す */}
+          {starred && (
+            <span className="ml-auto shrink-0 text-star" title="スター付き" aria-label="スター付き">
+              <Icon.Star filled className="h-3 w-3" />
+            </span>
+          )}
         </div>
 
         <div className="flex gap-3">
           <div className="min-w-0 flex-1">
-            {/* 既読は全体を薄くして、未読との差は太さと点だけにする */}
-            <div className={read ? "opacity-60" : ""}>
+            {/* 未読・既読の差はタイトルだけで示す。未読は点と太字、既読は細字で色を落とす */}
+            <div>
               <h3
-                className={`mt-0.5 line-clamp-2 text-sm leading-snug text-ink ${read ? "font-normal" : "font-medium"}`}
+                className={`mt-0.5 line-clamp-2 text-sm leading-snug ${
+                  read ? "font-normal text-ink/60" : "font-semibold text-ink"
+                }`}
               >
                 {!read && <span className="mr-1.5 inline-block h-1.5 w-1.5 -translate-y-0.5 rounded-full bg-accent align-middle" />}
                 {translated && <TranslatedBadge size={15} className="mr-1.5 -translate-y-px" />}
                 {translated ?? article.title}
               </h3>
 
-              {!compact && summary && (
-                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{summary}</p>
-              )}
-
               {labels.length > 0 && <LabelLine labels={labels} />}
-              {!compact && <BuzzLine sources={sources} buzz={buzz} />}
+              {!compact && <BuzzLine sources={sources} buzz={buzz} compact />}
               {reasons && reasons.length > 0 && (
                 <p className="mt-1 truncate text-2xs text-muted" title="今日の分に選んだ理由">
                   {reasons.join(" · ")}
@@ -479,7 +450,7 @@ function ArticleRow({
               src={article.image}
               alt=""
               loading="lazy"
-              className={`mt-1 h-16 w-16 shrink-0 rounded-lg bg-surface-2 object-cover ${read ? "opacity-60" : ""}`}
+              className="mt-1 h-16 w-16 shrink-0 rounded-lg bg-surface-2 object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
@@ -585,12 +556,43 @@ function TodayFooter({ today, loading }: { today: TodayProgress; loading: boolea
   );
 }
 
-/** 何ソースで話題か・はてブ数・HN ポイント */
-export function BuzzLine({ sources, buzz }: { sources: string[]; buzz: Buzz | undefined }) {
+/** 数字ごとの「伸びている」とみなす目安 */
+const HOT = { hatena: 100, points: 200, likes: 100 };
+
+type Metric = { key: keyof typeof HOT; label: string; value: number; title: string };
+
+function metricsOf(buzz: Buzz | undefined): Metric[] {
   const hatena = buzz?.hatena ?? 0;
   const points = buzz?.points ?? 0;
   const likes = buzz?.likes ?? 0;
-  if (sources.length === 0 && hatena < 3 && points === 0 && likes === 0) return null;
+  const metrics: Metric[] = [];
+  if (hatena >= 3) metrics.push({ key: "hatena", label: "B!", value: hatena, title: "はてなブックマーク数" });
+  if (points > 0) {
+    const comments = buzz?.comments !== undefined ? `（コメント ${buzz.comments}）` : "";
+    metrics.push({ key: "points", label: "▲", value: points, title: `Hacker News のポイント${comments}` });
+  }
+  if (likes > 0) metrics.push({ key: "likes", label: "♥", value: likes, title: "Qiita / Zenn のいいね数" });
+  return metrics;
+}
+
+/**
+ * 何ソースで話題か・はてブ数・HN ポイント・いいね数。
+ * 一覧 (compact) では目安に対していちばん伸びている数字を1つだけ出す
+ */
+export function BuzzLine({
+  sources,
+  buzz,
+  compact = false,
+}: {
+  sources: string[];
+  buzz: Buzz | undefined;
+  compact?: boolean;
+}) {
+  let metrics = metricsOf(buzz);
+  if (compact && metrics.length > 1) {
+    metrics = [metrics.reduce((a, b) => (b.value / HOT[b.key] > a.value / HOT[a.key] ? b : a))];
+  }
+  if (sources.length === 0 && metrics.length === 0) return null;
   return (
     <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-2xs">
       {sources.length > 0 && (
@@ -601,31 +603,16 @@ export function BuzzLine({ sources, buzz }: { sources: string[]; buzz: Buzz | un
           {sources.length + 1}ソース
         </span>
       )}
-      {hatena >= 3 && (
+      {metrics.map((m) => (
         <span
-          className={`shrink-0 tabular-nums ${hatena >= 100 ? "font-semibold text-hot" : "text-muted"}`}
-          title="はてなブックマーク数"
+          key={m.key}
+          className={`shrink-0 tabular-nums ${m.value >= HOT[m.key] ? "font-semibold text-ink" : "text-muted"}`}
+          title={m.title}
         >
-          B! {hatena.toLocaleString()}
+          {m.label} {m.value.toLocaleString()}
         </span>
-      )}
-      {points > 0 && (
-        <span
-          className={`shrink-0 tabular-nums ${points >= 200 ? "font-semibold text-hot-hn" : "text-muted"}`}
-          title={`Hacker News のポイント${buzz?.comments !== undefined ? `（コメント ${buzz.comments}）` : ""}`}
-        >
-          ▲ {points.toLocaleString()}
-        </span>
-      )}
-      {likes > 0 && (
-        <span
-          className={`shrink-0 tabular-nums ${likes >= 100 ? "font-semibold text-hot" : "text-muted"}`}
-          title="Qiita / Zenn のいいね数"
-        >
-          ♥ {likes.toLocaleString()}
-        </span>
-      )}
-      {sources.length > 0 && <span className="truncate text-muted">{sources.join(" · ")}</span>}
+      ))}
+      {!compact && sources.length > 0 && <span className="truncate text-muted">{sources.join(" · ")}</span>}
     </div>
   );
 }
@@ -638,7 +625,6 @@ function SkeletonRows({ density }: { density: Density }) {
           <div className="min-w-0 flex-1 space-y-2">
             <div className="h-2.5 w-1/3 rounded bg-line" />
             <div className="h-3.5 w-11/12 rounded bg-line" />
-            {density !== "compact" && <div className="h-3 w-3/4 rounded bg-line/70" />}
           </div>
           {density !== "compact" && i % 2 === 0 && <div className="mt-4 h-16 w-16 shrink-0 rounded-lg bg-line/70" />}
         </div>
