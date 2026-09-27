@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   description: "珈琲を飲んでいるあいだに、購読したフィードの新着と話題をまとめて読むRSSリーダー",
   applicationName: "Coffeed",
   appleWebApp: { capable: true, title: "Coffeed", statusBarStyle: "default" },
-  icons: { apple: "/apple-touch-icon.png" },
   // 個人用なので検索には出さない
   robots: { index: false, follow: false },
 };
