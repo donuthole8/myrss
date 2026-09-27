@@ -25,6 +25,7 @@ import {
 } from "@/lib/store";
 import { buildRelatedIndex, relatedTo } from "@/lib/related";
 import { buildStories, heatOf, isHot, leadOf, normalizeLink } from "@/lib/stories";
+import { domesticFeeds, domesticTerms, isEarly, isTechArticle, knownTermsOf } from "@/lib/early";
 import { loadHistory, record, rising, saveHistory, type TrendHistory } from "@/lib/trends";
 import {
   HIDE_BELOW,
@@ -68,6 +69,12 @@ const AUTO_REFRESH_MS = 15 * 60 * 1000;
 const THEME_ORDER: Theme[] = ["system", "light", "dark"];
 /** 話題ランキングに載せるのはこの期間に出た記事まで */
 const TRENDING_WINDOW_MS = 4 * 24 * 60 * 60 * 1000;
+/** 自分で順位を付けて並べるビュー。並べ替えを出さない */
+const RANKED_VIEWS = new Set<View["kind"]>(["starred", "trending", "early", "today"]);
+const EARLY_EMPTY = {
+  title: "いま海外で先行している話題はありません",
+  note: "Hacker News など海外のフィードで盛り上がっていて、国内のフィードやはてブにはまだ出ていない話題がここに並びます。",
+};
 /** はてブ数を聞き直すまでの間隔 */
 const BUZZ_TTL_MS = 30 * 60 * 1000;
 const BUZZ_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -336,6 +343,30 @@ export function Reader() {
     [stories, now],
   );
 
+  // 海外で話題になっていて、国内の購読元にもはてブにもまだ出ていないもの
+  // 技術の話題に限る。話題そのものは未上陸でも、製品名・技術名が国内でも話題ならその旨を添えて後ろに回す
+  const domestic = useMemo(() => domesticFeeds(namedByFeed), [namedByFeed]);
+  const { early, earlyReasons } = useMemo(() => {
+    const terms = domesticTerms(namedByFeed, domestic, now);
+    const picked = [...stories.values()]
+      .map((story) => ({ story, lead: leadOf(story) }))
+      .filter(({ story, lead }) => isEarly(story, domestic, hatena, now) && isTechArticle(lead, titleJa(lead)))
+      .map((p) => ({ ...p, known: knownTermsOf(p.story, terms) }))
+      .sort(
+        (a, b) =>
+          Number(a.known.length > 0) - Number(b.known.length > 0) ||
+          heatOf(b.story, now) - heatOf(a.story, now),
+      );
+    return {
+      early: picked.map((p) => p.lead),
+      earlyReasons: new Map(
+        picked
+          .filter((p) => p.known.length > 0)
+          .map((p) => [p.lead.id, p.known.map((k) => `「${k.term}」は国内でも${k.count}件`)]),
+      ),
+    };
+  }, [stories, namedByFeed, domestic, hatena, now, titleJa]);
+
   const watchMatches = useCallback(
     (article: Article, keyword: string) => {
       const watch = state.watches.find((w) => w.keyword === keyword);
@@ -380,6 +411,11 @@ export function Reader() {
   const trendingUnread = useMemo(
     () => trending.filter((a) => !isRead(a.id) && !isMuted(a)).length,
     [trending, isRead, isMuted],
+  );
+
+  const earlyUnread = useMemo(
+    () => early.filter((a) => !isRead(a.id) && !isMuted(a)).length,
+    [early, isRead, isMuted],
   );
 
   const watchCounts = useMemo(
@@ -543,6 +579,8 @@ export function Reader() {
       list = allArticles.filter((a) => isAiArticle(a, aiFeeds, titleJa(a)));
     } else if (view.kind === "trending") {
       list = trending;
+    } else if (view.kind === "early") {
+      list = early;
     } else if (view.kind === "watch") {
       list = allArticles.filter((a) => watchMatches(a, view.keyword));
     } else if (view.kind === "feed") {
@@ -559,7 +597,7 @@ export function Reader() {
     // いま開いている記事は、どの絞り込みでも勝手に消えないようにする
     const keep = (a: Article) => a.id === selectedId;
     // 今日の分は選んだ順のまま、読んだ記事も残して進み具合を見せる
-    const ranked = view.kind === "starred" || view.kind === "trending" || view.kind === "today";
+    const ranked = RANKED_VIEWS.has(view.kind);
     const recommended = state.prefs.sort === "recommended" && !ranked;
     const buzz = state.prefs.sort === "buzz" && !ranked;
     let hidden = 0;
@@ -594,7 +632,7 @@ export function Reader() {
     };
     // 話題ビューは作った時点で話題順に並んでいる
     const sorted =
-      view.kind === "trending" || view.kind === "today"
+      view.kind === "trending" || view.kind === "early" || view.kind === "today"
         ? list
         : recommended
           ? [...list].sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0) || byDate(a, b))
@@ -608,6 +646,7 @@ export function Reader() {
     namedByFeed,
     allArticles,
     trending,
+    early,
     todayArticles,
     inStack,
     watchMatches,
@@ -772,6 +811,8 @@ export function Reader() {
         return "AI ニュース";
       case "trending":
         return "話題";
+      case "early":
+        return "海外で先行";
       case "watch":
         return `ウォッチ: ${view.keyword}`;
       case "folder":
@@ -1158,6 +1199,7 @@ export function Reader() {
   }, [view.kind, today, todayArticles.length, todayUnread, choose, dailyCount, lastUpdated]);
 
   const reasonsOf = useCallback((article: Article) => today?.reasons[article.id], [today]);
+  const earlyReasonsOf = useCallback((article: Article) => earlyReasons.get(article.id), [earlyReasons]);
 
   /* ---------- キーボード ---------- */
 
@@ -1293,6 +1335,7 @@ export function Reader() {
           totalUnread={totalUnread}
           aiUnread={aiUnread}
           trendingUnread={trendingUnread}
+          earlyUnread={earlyUnread}
           dailyCount={dailyCount}
           todayUnread={todayUnread}
           stackUnread={stackUnread}
@@ -1340,7 +1383,7 @@ export function Reader() {
         unreadOnly={state.prefs.unreadOnly}
         onToggleUnreadOnly={toggleUnreadOnly}
         onMarkAllRead={markAllRead}
-        sort={view.kind === "starred" || view.kind === "trending" || view.kind === "today" ? null : state.prefs.sort}
+        sort={RANKED_VIEWS.has(view.kind) ? null : state.prefs.sort}
         onToggleSort={toggleSort}
         hiddenCount={hiddenCount}
         training={trained ? null : model.events}
@@ -1350,8 +1393,9 @@ export function Reader() {
         density={state.prefs.density}
         onBrowseCatalog={() => setCatalogOpen(true)}
         labelsOf={labelsOf}
-        reasonsOf={view.kind === "today" ? reasonsOf : undefined}
+        reasonsOf={view.kind === "today" ? reasonsOf : view.kind === "early" ? earlyReasonsOf : undefined}
         today={todayProgress}
+        empty={view.kind === "early" ? EARLY_EMPTY : undefined}
       />
 
       <ArticleView

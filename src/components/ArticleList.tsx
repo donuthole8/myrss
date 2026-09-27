@@ -65,10 +65,12 @@ type Props = {
   onBrowseCatalog: () => void;
   /** セキュリティ・メジャーリリース・マイスタックなどの目印 */
   labelsOf: (article: Article) => Label[];
-  /** 今日の N 本で、選んだ理由 */
+  /** 今日の N 本で選んだ理由や、海外で先行の補足 */
   reasonsOf?: (article: Article) => string[] | undefined;
   /** 今日の N 本を見ているときだけ渡す */
   today?: TodayProgress | null;
+  /** 記事が無いときの説明。ビューごとに言い分けたいときだけ渡す */
+  empty?: { title: string; note: string };
 };
 
 export function ArticleList({
@@ -104,6 +106,7 @@ export function ArticleList({
   labelsOf,
   reasonsOf,
   today = null,
+  empty,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const learning = sort === "recommended" ? training : null;
@@ -283,6 +286,7 @@ export function ArticleList({
             onClearQuery={() => onQueryChange("")}
             onShowAll={onToggleUnreadOnly}
             onBrowseCatalog={onBrowseCatalog}
+            empty={empty}
           />
         )}
 
@@ -437,7 +441,7 @@ function ArticleRow({
               {labels.length > 0 && <LabelLine labels={labels} />}
               {!compact && <BuzzLine sources={sources} buzz={buzz} compact />}
               {reasons && reasons.length > 0 && (
-                <p className="mt-1 truncate text-2xs text-muted" title="今日の分に選んだ理由">
+                <p className="mt-1 truncate text-2xs text-muted" title={reasons.join("\n")}>
                   {reasons.join(" · ")}
                 </p>
               )}
@@ -639,12 +643,14 @@ function EmptyState({
   onClearQuery,
   onShowAll,
   onBrowseCatalog,
+  empty,
 }: {
   query: string;
   unreadOnly: boolean;
   onClearQuery: () => void;
   onShowAll: () => void;
   onBrowseCatalog: () => void;
+  empty?: { title: string; note: string };
 }) {
   const { icon, title, note, action, onAction } = query
     ? {
@@ -664,8 +670,8 @@ function EmptyState({
         }
       : {
           icon: <Icon.Rss className="h-5 w-5" />,
-          title: "記事がありません",
-          note: "フィードを追加すると、ここに記事が並びます。",
+          title: empty?.title ?? "記事がありません",
+          note: empty?.note ?? "フィードを追加すると、ここに記事が並びます。",
           action: "おすすめから探す",
           onAction: onBrowseCatalog,
         };

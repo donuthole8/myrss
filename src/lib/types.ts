@@ -60,6 +60,8 @@ export type View =
   | { kind: "topic"; id: "ai" }
   /** 複数ソースで取り上げられている・ブクマが多い記事のランキング */
   | { kind: "trending" }
+  /** 海外で話題なのに、国内の配信元・はてブにはまだ出ていない記事 */
+  | { kind: "early" }
   /** 自分で登録したキーワードの横断ビュー */
   | { kind: "watch"; keyword: string }
   /** マイスタックに関わる記事 */
@@ -79,6 +81,8 @@ export function viewKey(view: View): string {
       return `topic:${view.id}`;
     case "trending":
       return "trending";
+    case "early":
+      return "early";
     case "watch":
       return `watch:${view.keyword}`;
     case "stack":

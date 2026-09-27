@@ -15,6 +15,8 @@ type Props = {
   aiUnread: number;
   /** 話題ランキングに載っている未読の数 */
   trendingUnread: number;
+  /** 海外で先行している話題の未読の数 */
+  earlyUnread: number;
   /** 今日の N 本の本数と、そのうち未読の数 */
   dailyCount: number;
   todayUnread: number;
@@ -70,6 +72,7 @@ export function Sidebar({
   totalUnread,
   aiUnread,
   trendingUnread,
+  earlyUnread,
   dailyCount,
   todayUnread,
   stackUnread,
@@ -240,6 +243,16 @@ export function Sidebar({
           <Icon.Flame className="h-4 w-4 shrink-0 opacity-80" />
           <span className="truncate">話題</span>
           <Count value={trendingUnread} active={current === "trending"} />
+        </button>
+        <button
+          type="button"
+          className={rowClass("early")}
+          onClick={() => onSelectView({ kind: "early" })}
+          title="海外で盛り上がっているのに、国内の購読元やはてブにはまだ出ていない話題を集めます"
+        >
+          <Icon.Globe className="h-4 w-4 shrink-0 opacity-80" />
+          <span className="truncate">海外で先行</span>
+          <Count value={earlyUnread} active={current === "early"} />
         </button>
         <div className="group/row relative">
           <button
