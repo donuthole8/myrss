@@ -159,17 +159,19 @@ export function Sidebar({
           >
             {refreshing ? <Spinner /> : <Icon.Refresh />}
           </button>
-          {/* 追加は URL から / おすすめから の2通りを1つのボタンにまとめる */}
-          <PopMenu
-            label="フィードを追加"
-            align="right"
-            trigger={<Icon.Plus />}
-            triggerClass="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
-            items={[
-              { icon: <Icon.Rss className="h-3.5 w-3.5" />, label: "URL で追加", hint: "A", onSelect: onAddFeed },
-              { icon: <Icon.Sparkle className="h-3.5 w-3.5" />, label: "おすすめから探す", onSelect: onBrowseCatalog },
-            ]}
-          />
+          {/* 追加は URL から / おすすめから の2通りを1つのボタンにまとめる。スマホは一覧の先頭に文字つきで出す */}
+          <div className="max-md:hidden">
+            <PopMenu
+              label="フィードを追加"
+              align="right"
+              trigger={<Icon.Plus />}
+              triggerClass="rounded-md p-1.5 text-muted hover:bg-line/60 hover:text-ink pointer-coarse:p-2.5"
+              items={[
+                { icon: <Icon.Rss className="h-3.5 w-3.5" />, label: "URL で追加", hint: "A", onSelect: onAddFeed },
+                { icon: <Icon.Sparkle className="h-3.5 w-3.5" />, label: "おすすめから探す", onSelect: onBrowseCatalog },
+              ]}
+            />
+          </div>
         </div>
       </div>
 
@@ -184,6 +186,17 @@ export function Sidebar({
           }
         }}
       >
+        {/* スマホはヘッダーの「+」だと気づきにくいので、ビューと同じ形の行で出す */}
+        <div className="mb-2 space-y-0.5 border-b border-line pb-2 md:hidden">
+          <button type="button" onClick={onAddFeed} className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm font-medium text-accent transition-colors hover:bg-accent-soft">
+            <Icon.Plus className="h-4 w-4 shrink-0" />
+            <span className="truncate">フィードを追加</span>
+          </button>
+          <button type="button" onClick={onBrowseCatalog} className={rowClass("")}>
+            <Icon.Sparkle className="h-4 w-4 shrink-0 opacity-80" />
+            <span className="truncate">おすすめから探す</span>
+          </button>
+        </div>
         <button
           type="button"
           className={rowClass("today")}
